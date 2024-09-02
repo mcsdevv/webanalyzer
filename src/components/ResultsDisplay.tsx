@@ -15,22 +15,17 @@ interface ResultsDisplayProps {
       cdn_provider: string;
       cms: string;
       ecommerce_platform: string;
-      analytics_tools: string[];
-      advertising_networks: string[];
-      security_measures: string[];
-      performance_optimizations: string[];
-      accessibility_features: string[];
       seo_analysis: Record<string, any>;
-      third_party_services: string[];
-      programming_languages: string[];
-      database_technologies: string[];
-      api_integrations: string[];
+      security_analysis: Record<string, any>;
+      performance_analysis: Record<string, any>;
+      accessibility_analysis: Record<string, any>;
     };
     architecture_diagram: string;
   };
 }
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {  const mermaidRef = useRef<HTMLDivElement>(null);
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
+  const mermaidRef = useRef<HTMLDivElement>(null);
   const [diagramError, setDiagramError] = useState<string | null>(null);
   const [diagramSvg, setDiagramSvg] = useState<string | null>(null);
 
@@ -128,74 +123,78 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {  const 
   };
 
   const analyzeHeadings = (structure: Record<string, number>) => {
-    const headings = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].map(h => structure[h] || 0);
-    if (headings[0] === 0) return "No main heading (h1) found. This may impact SEO.";
-    if (headings[0] > 1) return `Multiple h1 tags (${headings[0]}) found. Consider using only one main heading.`;
-    return `Good heading structure. H1: ${headings[0]}, H2: ${headings[1]}, H3: ${headings[2]}, H4: ${headings[3]}, H5: ${headings[4]}, H6: ${headings[5]}`;
+    const headings = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+    const headingCounts = headings.map(heading => structure[heading] || 0);
+    const totalHeadings = headingCounts.reduce((sum, count) => sum + count, 0);
+  
+    if (totalHeadings === 0) {
+      return 'No headings found';
+    }
+  
+    const headingRatio = headingCounts.map(count => ((count / totalHeadings) * 100).toFixed(2));
+    const mostCommonHeading = headings[headingCounts.indexOf(Math.max(...headingCounts))];
+  
+    return `Total headings: ${totalHeadings}, Most common heading: ${mostCommonHeading} (${headingRatio}%)`;
   };
-
+  
   const analyzeSemanticElements = (structure: Record<string, number>) => {
-    const semanticElements = ['header', 'nav', 'main', 'article', 'section', 'aside', 'footer'];
-    const usedElements = semanticElements.filter(el => structure[el] && structure[el] > 0);
-    if (usedElements.length === 0) return "No semantic elements found. Consider using semantic HTML for better structure and SEO.";
-    return `Semantic elements used: ${usedElements.join(', ')}. Good for accessibility and SEO.`;
+    const semanticElements = ['header', 'nav', 'main', 'section', 'article', 'aside', 'footer'];
+    const semanticElementCounts = semanticElements.map(element => structure[element] || 0);
+    const totalSemanticElements = semanticElementCounts.reduce((sum, count) => sum + count, 0);
+  
+    if (totalSemanticElements === 0) {
+      return 'No semantic elements found';
+    }
+  
+    return `Total semantic elements: ${totalSemanticElements}`;
   };
-
+  
   const analyzeInteractiveElements = (structure: Record<string, number>) => {
     const interactiveElements = ['a', 'button', 'input', 'select', 'textarea'];
-    const counts = interactiveElements.map(el => structure[el] || 0);
-    return `Interactive elements: Links (${counts[0]}), Buttons (${counts[1]}), Inputs (${counts[2]}), Selects (${counts[3]}), Textareas (${counts[4]})`;
+    const interactiveElementCounts = interactiveElements.map(element => structure[element] || 0);
+    const totalInteractiveElements = interactiveElementCounts.reduce((sum, count) => sum + count, 0);
+  
+    if (totalInteractiveElements === 0) {
+      return 'No interactive elements found';
+    }
+  
+    return `Total interactive elements: ${totalInteractiveElements}`;
   };
-
+  
   const renderValue = (value: any) => {
-    if (Array.isArray(value)) {
+    if (typeof value === 'object' && value !== null) {
       return (
         <ul className="list-disc list-inside">
-          {value.map((item, index) => (
-            <li key={index}>{item}</li>
+          {Object.entries(value).map(([key, val]) => (
+            <li key={key}>
+              <code>{key}</code>: {renderValue(val)}
+            </li>
           ))}
         </ul>
       );
-    } else if (typeof value === 'object' && value !== null) {
-      return (
-        <div className="pl-4">
-{Object.entries(value).map(([subKey, subValue]) => (
-  <div key={subKey}>
-    <span className="font-semibold">{formatKey(subKey)}:</span>
-    {React.isValidElement(subValue) ? subValue : String(subValue)}
-  </div>
-))}
-        </div>
-      );
-    } else {
-      return <p>{value}</p>;
     }
+  
+    return <code>{String(value)}</code>;
   };
-
-  console.log("Rendering ResultsDisplay component");
-
+  
   return (
-    <div className="mt-4">
-      {!results.analysis_results.error && (
-        <>
-          <h2 className="text-2xl font-bold mb-2">Architecture Diagram</h2>
-          {diagramError ? (
-            <p className="text-red-500">{diagramError}</p>
-          ) : diagramSvg ? (
-            <div
-              className="bg-white p-4 rounded border border-gray-300"
-              style={{ width: "100%", minHeight: "400px", overflow: "auto" }}
-              dangerouslySetInnerHTML={{ __html: diagramSvg }}
-            />
-          ) : (
-            <p>Loading diagram...</p>
-          )}
-        </>
+    <div className="max-w-4xl mx-auto p-4">
+      {diagramSvg && (
+        <div className="mt-4" ref={mermaidRef}>
+          <h2 className="text-2xl font-semibold mb-2">Architecture Diagram</h2>
+          <div dangerouslySetInnerHTML={{ __html: diagramSvg }} />
+        </div>
       )}
-      <h2 className="text-2xl font-bold mt-4 mb-2">Analysis Results</h2>
+      {diagramError && (
+        <div className="mt-4 text-red-500">
+          <h2 className="text-2xl font-semibold mb-2">Error rendering diagram</h2>
+          <p>{diagramError}</p>
+        </div>
+      )}
+      <h1 className="text-3xl font-semibold mb-4">Website Analysis Results</h1>
       {formatResults(results.analysis_results)}
     </div>
   );
-};
-
-export default ResultsDisplay;
+  };
+  
+  export default ResultsDisplay;

@@ -23,6 +23,10 @@ export async function analyzeWebsite(url: string) {
       cdn_provider: detectCdnProvider(response.headers),
       cms: detectCMS(response.data, document),
       ecommerce_platform: detectEcommercePlatform(response.data, document),
+      seo_analysis: analyzeSEO(document),
+      security_analysis: analyzeSecurity(response.headers),
+      performance_analysis: analyzePerformance(response.headers),
+      accessibility_analysis: analyzeAccessibility(document),
     };
 
     const architectureDiagram = generateArchitectureDiagram(analysis);
@@ -44,6 +48,47 @@ export async function analyzeWebsite(url: string) {
   }
 }
 
+// ... (rest of the code remains the same)
+
+
+function analyzeSecurity(headers: AxiosResponseHeaders | RawAxiosResponseHeaders): Record<string, any> {
+  return {
+    https: headers['strict-transport-security'] ? true : false,
+    sslTLS: headers['content-security-policy'] ? true : false,
+    securityHeaders: Object.keys(headers).filter(header => header.startsWith('security-')),
+  };
+}
+
+function analyzePerformance(headers: AxiosResponseHeaders | RawAxiosResponseHeaders): Record<string, any> {
+  return {
+    cacheControl: headers['cache-control'],
+    expires: headers['expires'],
+    contentEncoding: headers['content-encoding'],
+    transferEncoding: headers['transfer-encoding'],
+  };
+}
+
+function analyzeSEO(document: Document): Record<string, any> {
+  return {
+    metaTitle: document.title,
+    metaDescription: document.querySelector('meta[name="description"]')?.getAttribute('content'),
+    metaKeywords: document.querySelector('meta[name="keywords"]')?.getAttribute('content'),
+    headerTags: Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')).map(header => header.textContent),
+    imageAltTags: Array.from(document.querySelectorAll('img')).map(image => image.alt),
+    internalLinks: Array.from(document.querySelectorAll('a')).filter(link => link.href && link.href.startsWith('/')).map(link => link.href),
+    externalLinks: Array.from(document.querySelectorAll('a')).filter(link => link.href && link.href.startsWith('http')).map(link => link.href),
+  };
+}
+
+function analyzeAccessibility(document: Document): Record<string, any> {
+  const bodies = document.querySelectorAll('body');
+  return {
+    semanticHTML: document.querySelectorAll('header, nav, main, section, article, aside, footer').length > 0,
+    altTextForImages: Array.from(document.querySelectorAll('img')).every(image => image.alt),
+    descriptiveLinkText: Array.from(document.querySelectorAll('a')).every(link => link.textContent.trim() !== ''),
+    colorContrast: Array.from(bodies).every(body => window.getComputedStyle(body).color !== window.getComputedStyle(body).backgroundColor),
+  };
+}
 function analyzeHtmlStructure(doc: Document): Record<string, number> {
   const structure: Record<string, number> = {};
   const elements = doc.getElementsByTagName('*');
@@ -143,6 +188,7 @@ function detectEcommercePlatform(html: string, doc: Document): string {
   if (html.includes('prestashop') || doc.querySelector('meta[name="generator"][content*="PrestaShop"]')) return 'PrestaShop';
   return 'Unknown';
 }
+
 function generateArchitectureDiagram(analysis: any): string {
   console.log('Generating architecture diagram...');
   try {
