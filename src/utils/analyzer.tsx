@@ -1,5 +1,9 @@
 import axios, { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
 import { JSDOM } from 'jsdom';
+import { resolve } from 'dns';
+import * as dns from 'dns';
+import { URL } from 'url';
+
 
 export async function analyzeWebsite(url: string) {
   try {
@@ -13,13 +17,14 @@ export async function analyzeWebsite(url: string) {
     const dom = new JSDOM(response.data);
     const document = dom.window.document;
     const parser = dom.window.DOMParser;
+    const hostingProvider = await detectHostingProvider(response.headers, url, response.data);
 
     const analysis = {
       html_structure: analyzeHtmlStructure(document),
       css_frameworks: detectCssFrameworks(response.data, document),
       javascript_libraries: detectJavascriptLibraries(response.data, document),
       server_technologies: detectServerTechnologies(response.headers),
-      hosting_provider: detectHostingProvider(response.headers, url, response.data),
+      hosting_provider: hostingProvider,
       cdn_provider: detectCdnProvider(response.headers),
       cms: detectCMS(response.data, document),
       ecommerce_platform: detectEcommercePlatform(response.data, document),
@@ -81,12 +86,10 @@ function analyzeSEO(document: Document): Record<string, any> {
 }
 
 function analyzeAccessibility(document: Document): Record<string, any> {
-  const bodies = document.querySelectorAll('body');
   return {
     semanticHTML: document.querySelectorAll('header, nav, main, section, article, aside, footer').length > 0,
     altTextForImages: Array.from(document.querySelectorAll('img')).every(image => image.alt),
     descriptiveLinkText: Array.from(document.querySelectorAll('a')).every(link => link.textContent.trim() !== ''),
-    colorContrast: Array.from(bodies).every(body => window.getComputedStyle(body).color !== window.getComputedStyle(body).backgroundColor),
   };
 }
 function analyzeHtmlStructure(doc: Document): Record<string, number> {
@@ -142,23 +145,82 @@ function detectServerTechnologies(headers: AxiosResponseHeaders | RawAxiosRespon
   return technologies;
 }
 
-function detectHostingProvider(headers: AxiosResponseHeaders | RawAxiosResponseHeaders, url: string, html: string): string {
-  if (headers['server'] && (headers['server'] as string).includes('GitHub.com')) return 'GitHub Pages';
-  if (headers['server'] && (headers['server'] as string).includes('Squarespace')) return 'Squarespace';
-  if (headers['x-wix-request-id']) return 'Wix';
-  if (headers['x-shopify-stage']) return 'Shopify';
-  if (url.includes('herokuapp.com')) return 'Heroku';
-  if (url.includes('netlify.app')) return 'Netlify';
-  if (url.includes('vercel.app')) return 'Vercel';
-  if (url.includes('wpengine.com')) return 'WP Engine';
-  if (url.includes('cloudflarestore.com')) return 'Cloudflare Pages';
-  if (url.includes('azurewebsites.net')) return 'Microsoft Azure';
-  if (url.includes('amazonaws.com')) return 'Amazon Web Services';
-  if (html.includes('cdn.wixstatic.com')) return 'Wix';
-  if (html.includes('squarespace-cdn.com')) return 'Squarespace';
-  if (html.includes('x-powered-by-shopify')) return 'Shopify';
-  if (html.includes('wp-content')) return 'WordPress (self-hosted or managed)';
-  return 'Unknown';
+
+function detectHostingProvider(headers: any, url: string, html: string): Promise<string> {
+  const hostingProviders = [
+    { name: 'GitHub Pages', headers: ['server*="GitHub.com"'], url: ['github.io'], dns: ['github.com'] },
+    { name: 'Squarespace', headers: ['server*="Squarespace"'], url: [], dns: ['squarespace.com'] },
+    { name: 'Wix', headers: ['x-wix-request-id'], url: [], dns: ['wix.com'] },
+    { name: 'Shopify', headers: ['x-shopify-stage'], url: [], dns: ['shopify.com'] },
+    { name: 'Heroku', url: ['herokuapp.com'], dns: ['heroku.com'] },
+    { name: 'Netlify', url: ['netlify.app'], dns: ['netlify.com'] },
+    { name: 'Vercel', url: ['vercel.app'], dns: ['vercel.com', 'cname.vercel-dns.com'], },
+    { name: 'WP Engine', url: ['wpengine.com'], dns: ['wpengine.com'] },
+    { name: 'Cloudflare Pages', url: ['cloudflarestore.com'], dns: ['cloudflare.com'] },
+    { name: 'Microsoft Azure', url: ['azurewebsites.net'], dns: ['azure.com'] },
+    { name: 'Amazon Web Services', url: ['amazonaws.com'], dns: ['amazonaws.com'] },
+    { name: 'WordPress', html: ['wp-content'] },
+  ];
+
+ 
+  return new Promise((resolve, reject) => {
+    const domain = new URL(url).hostname;
+
+    // First, check headers, url, and html for a match
+    for (const provider of hostingProviders) {
+      if (provider.headers && provider.headers.some((header) => headers[header.split('*')[0]] && headers[header.split('*')[0]].includes(header.split('*')[1]))) {
+        return resolve(provider.name);
+      } else if (provider.url && provider.url.some((urlPart) => url.includes(urlPart))) {
+        return resolve(provider.name);
+      } else if (provider.html && provider.html.some((htmlPart) => html.includes(htmlPart))) {
+        return resolve(provider.name);
+      }
+    }
+
+    // If no match, proceed with DNS lookups
+    async function resolveDns(domain) {
+      try {
+        const addresses = await dns.promises.resolve(domain);
+        console.log(`A records: ${addresses.join(', ')}`);
+
+        const nsRecords = await dns.promises.resolveNs(domain);
+        console.log(`NS records: ${nsRecords.join(', ')}`);
+
+        // Verify hosting provider using NS records
+        for (const provider of hostingProviders) {
+          if (provider.dns && nsRecords.some((nsRecord) => provider.dns.includes(nsRecord))) {
+            return provider.name;
+          }
+        }
+
+        // If no match, continue with other DNS records
+        const mxRecords = await dns.promises.resolveMx(domain);
+        console.log(`MX records: ${mxRecords.map((record) => record.exchange).join(', ')}`);
+
+        const cnameRecords = await dns.promises.resolveCname(domain);
+        console.log(`CNAME records: ${cnameRecords.join(', ')}`);
+
+        // Check DNS records for a match
+        for (const provider of hostingProviders) {
+          const dnsMatch = provider.dns && (
+            addresses.some((address) => provider.dns.includes(address))
+            || mxRecords.some((mxRecord) => provider.dns.includes(mxRecord.exchange))
+            || cnameRecords.some((cname) => provider.dns.includes(cname))
+          );
+          if (dnsMatch) {
+            return provider.name;
+          }
+        }
+
+        // If no match, return 'Unknown'
+        return 'Unknown';
+      } catch (err) {
+        console.error(`DNS query error: ${err.message}`);
+        return 'Unknown';
+      }
+    };
+  }
+);
 }
 
 function detectCdnProvider(headers: AxiosResponseHeaders | RawAxiosResponseHeaders): string {
@@ -199,6 +261,7 @@ function generateArchitectureDiagram(analysis: any): string {
   const getNextId = () => {
     return `N${nodeId++}`;
   };
+
 
   const addNodes = (parentId: string, items: string[], label: string) => {
     if (items && items.length > 0) {
