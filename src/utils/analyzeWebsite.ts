@@ -1,9 +1,8 @@
 import axios, { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
 import { JSDOM } from 'jsdom';
-import { resolve } from 'dns';
 import * as dns from 'dns';
 import { URL } from 'url';
-
+import { promises as dnsPromises } from 'dns';
 
 export async function analyzeWebsite(url: string) {
   try {
@@ -16,7 +15,6 @@ export async function analyzeWebsite(url: string) {
 
     const dom = new JSDOM(response.data);
     const document = dom.window.document;
-    const parser = dom.window.DOMParser;
     const hostingProvider = await detectHostingProvider(response.headers, url, response.data);
 
     const analysis = {
@@ -53,9 +51,7 @@ export async function analyzeWebsite(url: string) {
   }
 }
 
-// ... (rest of the code remains the same)
-
-
+// Security Analysis
 function analyzeSecurity(headers: AxiosResponseHeaders | RawAxiosResponseHeaders): Record<string, any> {
   return {
     https: headers['strict-transport-security'] ? true : false,
@@ -64,6 +60,7 @@ function analyzeSecurity(headers: AxiosResponseHeaders | RawAxiosResponseHeaders
   };
 }
 
+// Performance Analysis
 function analyzePerformance(headers: AxiosResponseHeaders | RawAxiosResponseHeaders): Record<string, any> {
   return {
     cacheControl: headers['cache-control'],
@@ -73,6 +70,7 @@ function analyzePerformance(headers: AxiosResponseHeaders | RawAxiosResponseHead
   };
 }
 
+// SEO Analysis
 function analyzeSEO(document: Document): Record<string, any> {
   return {
     metaTitle: document.title,
@@ -85,6 +83,7 @@ function analyzeSEO(document: Document): Record<string, any> {
   };
 }
 
+// Accessibility Analysis
 function analyzeAccessibility(document: Document): Record<string, any> {
   return {
     semanticHTML: document.querySelectorAll('header, nav, main, section, article, aside, footer').length > 0,
@@ -92,6 +91,8 @@ function analyzeAccessibility(document: Document): Record<string, any> {
     descriptiveLinkText: Array.from(document.querySelectorAll('a')).every(link => link.textContent.trim() !== ''),
   };
 }
+
+// HTML Structure Analysis
 function analyzeHtmlStructure(doc: Document): Record<string, number> {
   const structure: Record<string, number> = {};
   const elements = doc.getElementsByTagName('*');
@@ -102,29 +103,50 @@ function analyzeHtmlStructure(doc: Document): Record<string, number> {
   return structure;
 }
 
+// CSS Framework Detection
 function detectCssFrameworks(html: string, doc: Document): string[] {
   const frameworks = [];
-  if (html.includes('bootstrap') || doc.querySelector('link[href*="bootstrap"]')) frameworks.push('Bootstrap');
-  if (html.includes('tailwind') || doc.querySelector('link[href*="tailwind"]')) frameworks.push('Tailwind CSS');
-  if (html.includes('bulma') || doc.querySelector('link[href*="bulma"]')) frameworks.push('Bulma');
-  if (html.includes('foundation') || doc.querySelector('link[href*="foundation"]')) frameworks.push('Foundation');
-  if (html.includes('materialize') || doc.querySelector('link[href*="materialize"]')) frameworks.push('Materialize');
-  if (html.includes('semantic-ui') || doc.querySelector('link[href*="semantic-ui"]')) frameworks.push('Semantic UI');
+  const cssFrameworks = [
+    { name: 'Bootstrap', keyword: 'bootstrap' },
+    { name: 'Tailwind CSS', keyword: 'tailwind' },
+    { name: 'Bulma', keyword: 'bulma' },
+    { name: 'Foundation', keyword: 'foundation' },
+    { name: 'Materialize', keyword: 'materialize' },
+    { name: 'Semantic UI', keyword: 'semantic-ui' },
+  ];
+
+  cssFrameworks.forEach(({ name, keyword }) => {
+    if (html.includes(keyword) || doc.querySelector(`link[href*="${keyword}"]`)) {
+      frameworks.push(name);
+    }
+  });
+
   return frameworks;
 }
 
+// JavaScript Library Detection
 function detectJavascriptLibraries(html: string, doc: Document): string[] {
   const libraries = [];
-  if (html.includes('react') || doc.querySelector('script[src*="react"]')) libraries.push('React');
-  if (html.includes('jquery') || doc.querySelector('script[src*="jquery"]')) libraries.push('jQuery');
-  if (html.includes('vue') || doc.querySelector('script[src*="vue"]')) libraries.push('Vue.js');
-  if (html.includes('angular') || doc.querySelector('script[src*="angular"]')) libraries.push('Angular');
-  if (html.includes('lodash') || doc.querySelector('script[src*="lodash"]')) libraries.push('Lodash');
-  if (html.includes('moment') || doc.querySelector('script[src*="moment"]')) libraries.push('Moment.js');
-  if (html.includes('axios') || doc.querySelector('script[src*="axios"]')) libraries.push('Axios');
+  const jsLibraries = [
+    { name: 'React', keyword: 'react' },
+    { name: 'jQuery', keyword: 'jquery' },
+    { name: 'Vue.js', keyword: 'vue' },
+    { name: 'Angular', keyword: 'angular' },
+    { name: 'Lodash', keyword: 'lodash' },
+    { name: 'Moment.js', keyword: 'moment' },
+    { name: 'Axios', keyword: 'axios' },
+  ];
+
+  jsLibraries.forEach(({ name, keyword }) => {
+    if (html.includes(keyword) || doc.querySelector(`script[src*="${keyword}"]`)) {
+      libraries.push(name);
+    }
+  });
+
   return libraries;
 }
 
+// Server Technology Detection
 function detectServerTechnologies(headers: AxiosResponseHeaders | RawAxiosResponseHeaders): string[] {
   const technologies = [];
   const server = headers['server'] as string | undefined;
@@ -145,84 +167,37 @@ function detectServerTechnologies(headers: AxiosResponseHeaders | RawAxiosRespon
   return technologies;
 }
 
+// Hosting Provider Detection
+async function detectHostingProvider(headers: unknown, url: string, data: any): Promise<string> {
+  const apiKey = "wu4prqwwhtubn2999uxru4voyt903eflke963sow5mzso0x50j53uzl11w337q4gbxx6m9"; // Your API key
+  const domain = new URL(url).hostname;
 
-function detectHostingProvider(headers: any, url: string, html: string): Promise<string> {
-  const hostingProviders = [
-    { name: 'GitHub Pages', headers: ['server*="GitHub.com"'], url: ['github.io'], dns: ['github.com'] },
-    { name: 'Squarespace', headers: ['server*="Squarespace"'], url: [], dns: ['squarespace.com'] },
-    { name: 'Wix', headers: ['x-wix-request-id'], url: [], dns: ['wix.com'] },
-    { name: 'Shopify', headers: ['x-shopify-stage'], url: [], dns: ['shopify.com'] },
-    { name: 'Heroku', url: ['herokuapp.com'], dns: ['heroku.com'] },
-    { name: 'Netlify', url: ['netlify.app'], dns: ['netlify.com'] },
-    { name: 'Vercel', url: ['vercel.app'], dns: ['vercel.com', 'cname.vercel-dns.com'], },
-    { name: 'WP Engine', url: ['wpengine.com'], dns: ['wpengine.com'] },
-    { name: 'Cloudflare Pages', url: ['cloudflarestore.com'], dns: ['cloudflare.com'] },
-    { name: 'Microsoft Azure', url: ['azurewebsites.net'], dns: ['azure.com'] },
-    { name: 'Amazon Web Services', url: ['amazonaws.com'], dns: ['amazonaws.com'] },
-    { name: 'WordPress', html: ['wp-content'] },
-  ];
+  try {
+    // Call the Who Hosts This API
+    const response = await axios.get(`https://www.who-hosts-this.com/API/Host`, {
+      params: {
+        key: apiKey,
+        url: domain,
+      },
+    });
 
- 
-  return new Promise((resolve, reject) => {
-    const domain = new URL(url).hostname;
+    const { result, results } = response.data;
 
-    // First, check headers, url, and html for a match
-    for (const provider of hostingProviders) {
-      if (provider.headers && provider.headers.some((header) => headers[header.split('*')[0]] && headers[header.split('*')[0]].includes(header.split('*')[1]))) {
-        return resolve(provider.name);
-      } else if (provider.url && provider.url.some((urlPart) => url.includes(urlPart))) {
-        return resolve(provider.name);
-      } else if (provider.html && provider.html.some((htmlPart) => html.includes(htmlPart))) {
-        return resolve(provider.name);
-      }
+    if (result.code === 200 && results && results.length > 0) {
+      // Assuming we want to return the ISP name
+      const ispName = results[0].isp_name;
+      return `Hosting Provider: ${ispName}`;
+    } else {
+      console.error('No hosting provider found in API response:', response.data);
+      return 'UnknownA';
     }
-
-    // If no match, proceed with DNS lookups
-    async function resolveDns(domain) {
-      try {
-        const addresses = await dns.promises.resolve(domain);
-        console.log(`A records: ${addresses.join(', ')}`);
-
-        const nsRecords = await dns.promises.resolveNs(domain);
-        console.log(`NS records: ${nsRecords.join(', ')}`);
-
-        // Verify hosting provider using NS records
-        for (const provider of hostingProviders) {
-          if (provider.dns && nsRecords.some((nsRecord) => provider.dns.includes(nsRecord))) {
-            return provider.name;
-          }
-        }
-
-        // If no match, continue with other DNS records
-        const mxRecords = await dns.promises.resolveMx(domain);
-        console.log(`MX records: ${mxRecords.map((record) => record.exchange).join(', ')}`);
-
-        const cnameRecords = await dns.promises.resolveCname(domain);
-        console.log(`CNAME records: ${cnameRecords.join(', ')}`);
-
-        // Check DNS records for a match
-        for (const provider of hostingProviders) {
-          const dnsMatch = provider.dns && (
-            addresses.some((address) => provider.dns.includes(address))
-            || mxRecords.some((mxRecord) => provider.dns.includes(mxRecord.exchange))
-            || cnameRecords.some((cname) => provider.dns.includes(cname))
-          );
-          if (dnsMatch) {
-            return provider.name;
-          }
-        }
-
-        // If no match, return 'Unknown'
-        return 'Unknown';
-      } catch (err) {
-        console.error(`DNS query error: ${err.message}`);
-        return 'Unknown';
-      }
-    };
+  } catch (error) {
+    console.error('Error calling Who Hosts This API:', error);
+    return 'UnknownB'; // Fallback if API call fails
   }
-);
 }
 
+// CDN Provider Detection
 function detectCdnProvider(headers: AxiosResponseHeaders | RawAxiosResponseHeaders): string {
   if (headers['x-cdn'] === 'Cloudflare' || headers['cf-ray']) return 'Cloudflare';
   if (headers['x-amz-cf-id']) return 'Amazon CloudFront';
@@ -233,6 +208,7 @@ function detectCdnProvider(headers: AxiosResponseHeaders | RawAxiosResponseHeade
   return 'Unknown';
 }
 
+// CMS Detection
 function detectCMS(html: string, doc: Document): string {
   if (html.includes('wp-content') || doc.querySelector('meta[name="generator"][content*="WordPress"]')) return 'WordPress';
   if (html.includes('Drupal') || doc.querySelector('meta[name="generator"][content*="Drupal"]')) return 'Drupal';
@@ -242,6 +218,7 @@ function detectCMS(html: string, doc: Document): string {
   return 'Unknown';
 }
 
+// E-commerce Platform Detection
 function detectEcommercePlatform(html: string, doc: Document): string {
   if (html.includes('shopify') || doc.querySelector('link[href*="shopify"]')) return 'Shopify';
   if (html.includes('magento') || doc.querySelector('script[src*="magento"]')) return 'Magento';
@@ -251,54 +228,52 @@ function detectEcommercePlatform(html: string, doc: Document): string {
   return 'Unknown';
 }
 
+// Generate Architecture Diagram
 function generateArchitectureDiagram(analysis: any): string {
-  console.log('Generating architecture diagram...');
   try {
-  let diagram = 'graph TD\n';
-  diagram += '  A[Client] --> B[Website]\n';
-  
-  let nodeId = 1;
-  const getNextId = () => {
-    return `N${nodeId++}`;
-  };
+    let diagram = 'graph TD\n';
+    diagram += '  A[Client] --> B[Website]\n';
 
+    let nodeId = 1;
+    const getNextId = () => {
+      return `N${nodeId++}`;
+    };
 
-  const addNodes = (parentId: string, items: string[], label: string) => {
-    if (items && items.length > 0) {
-      const id = getNextId();
-      diagram += `  ${parentId} --> ${id}[${label}]\n`;
-      items.forEach((item, index) => {
-        const itemId = getNextId();
-        diagram += `  ${id} --> ${itemId}["${item.replace(/"/g, "'")}"]\n`;
-      });
+    const addNodes = (parentId: string, items: string[], label: string) => {
+      if (items && items.length > 0) {
+        const id = getNextId();
+        diagram += `  ${parentId} --> ${id}[${label}]\n`;
+        items.forEach((item, index) => {
+          const itemId = getNextId();
+          diagram += `  ${id} --> ${itemId}["${item.replace(/"/g, "'")}"]\n`;
+        });
+      }
+    };
+
+    addNodes('B', analysis.css_frameworks, 'CSS Frameworks');
+    addNodes('B', analysis.javascript_libraries, 'JavaScript Libraries');
+    addNodes('B', analysis.server_technologies, 'Server Technologies');
+
+    if (analysis.hosting_provider && analysis.hosting_provider !== 'Unknown') {
+      diagram += `  B --> ${getNextId()}["Hosting: ${analysis.hosting_provider.replace(/"/g, "'")}"]\n`;
     }
-  };
 
-  addNodes('B', analysis.css_frameworks, 'CSS Frameworks');
-  addNodes('B', analysis.javascript_libraries, 'JavaScript Libraries');
-  addNodes('B', analysis.server_technologies, 'Server Technologies');
-  
-  if (analysis.hosting_provider && analysis.hosting_provider !== 'Unknown') {
-    diagram += `  B --> ${getNextId()}["Hosting: ${analysis.hosting_provider.replace(/"/g, "'")}"]\n`;
-  }
-  
-  if (analysis.cdn_provider && analysis.cdn_provider !== 'Unknown') {
-    diagram += `  B --> ${getNextId()}["CDN: ${(analysis.cdn_provider as string).replace(/"/g, "'")}"]\n`;
-  }
-  
-  if (analysis.cms && analysis.cms !== 'Unknown') {
-    diagram += `  B --> ${getNextId()}["CMS: ${(analysis.cms as string).replace(/"/g, "'")}"]\n`;
-  }
-  
+    if (analysis.cdn_provider && analysis.cdn_provider !== 'Unknown') {
+      diagram += `  B --> ${getNextId()}["CDN: ${(analysis.cdn_provider as string).replace(/"/g, "'")}"]\n`;
+    }
 
-  if (analysis.ecommerce_platform && analysis.ecommerce_platform !== 'Unknown') {
-    diagram += `  B --> ${getNextId()}["E-commerce: ${analysis.ecommerce_platform.replace(/"/g, "'")}"]\n`;
+    if (analysis.cms && analysis.cms !== 'Unknown') {
+      diagram += `  B --> ${getNextId()}["CMS: ${(analysis.cms as string).replace(/"/g, "'")}"]\n`;
+    }
+
+    if (analysis.ecommerce_platform && analysis.ecommerce_platform !== 'Unknown') {
+      diagram += `  B --> ${getNextId()}["E-commerce: ${analysis.ecommerce_platform.replace(/"/g, "'")}"]\n`;
+    }
+
+    console.log('Diagram generated:', diagram);
+    return diagram;
+  } catch (error) {
+    console.error('Error generating architecture diagram:', error);
+    return '';
   }
-  
-  console.log('ADiagram generated:', diagram);
-  return diagram;
-} catch (error) {
-  console.error('Error generating architecture diagram:', error);
-  return '';
-}
 }

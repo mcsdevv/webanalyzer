@@ -1,30 +1,31 @@
-import { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import axios from 'axios';
 import UserInterface from './components/UserInterface';
 import ResultsDisplay from './components/ResultsDisplay';
-import axios from 'axios';
-import React from 'react';
 
 function App() {
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAnalyze = async (url: string) => {
+  const memoizedResults = useMemo(() => results, [results]);
+
+  const handleAnalyze = useCallback(async (url: string) => {
     setLoading(true);
     setError(null);
     setResults(null);
     try {
-      const response = await axios.post('http://localhost:3001/analyze', { url });
+      console.log(`Sending analysis request for URL: ${url}`);
+      const response = await axios.post('http://localhost:3001/analyze', { url }, { timeout: 30000 });
       console.log('Received results:', response.data);
-      console.log('Architecture diagram:', response.data.architecture_diagram);
       setResults(response.data);
-    } catch (error) {
-      console.error('Error during analysis:', error);
-      setError(error as any);
+    } catch (error: any) {
+      console.error('Error during analysis:', error.message || error);
+      setError(error.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   return (
     <div className="container mx-auto p-4">
@@ -32,7 +33,7 @@ function App() {
       <UserInterface onAnalyze={handleAnalyze} loading={loading} />
       {loading && <p className="mt-4">Analyzing website...</p>}
       {error && <p className="mt-4 text-red-500">Error: {error}</p>}
-      {results && <ResultsDisplay results={results} />}
+      {results && <ResultsDisplay results={memoizedResults} />}
     </div>
   );
 }

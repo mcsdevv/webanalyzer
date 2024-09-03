@@ -1,20 +1,23 @@
-import React, { useEffect, useRef, useState } from "react";
-import mermaid from "mermaid";
+import React, { useEffect, useRef, useState } from 'react';
+import mermaid from 'mermaid';
 
 interface ResultsDisplayProps {
   results: {
     analysis_results: {
       error?: string;
-      basic_info?: Record<string, string>;
+      basic_info: {
+        title: string;
+        description: string;
+      };
       html_structure: Record<string, number>;
-      meta_tags: Record<string, string>;
-      css_frameworks: string[];
-      javascript_libraries: string[];
-      server_technologies: string[];
-      hosting_provider: string;
-      cdn_provider: string;
-      cms: string;
-      ecommerce_platform: string;
+      meta_tags?: Record<string, string>;
+      css_frameworks?: string[];
+      javascript_libraries?: string[];
+      server_technologies?: string[];
+      hosting_provider?: string;
+      cdn_provider?: string;
+      cms?: string;
+      ecommerce_platform?: string;
       seo_analysis: Record<string, any>;
       security_analysis: Record<string, any>;
       performance_analysis: Record<string, any>;
@@ -24,25 +27,21 @@ interface ResultsDisplayProps {
   };
 }
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
+const ResultsDisplay: React.FC<ResultsDisplayProps> = React.memo(({ results }) => {
   const mermaidRef = useRef<HTMLDivElement>(null);
   const [diagramError, setDiagramError] = useState<string | null>(null);
   const [diagramSvg, setDiagramSvg] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("ResultsDisplay mounted");
     mermaid.initialize({
       startOnLoad: true,
-      securityLevel: "loose",
-      theme: "default",
+      securityLevel: 'loose',
+      theme: 'default',
     });
-    return () => console.log("ResultsDisplay unmounted");
   }, []);
 
   useEffect(() => {
-    console.log("Results changed:", results);
     if (results.architecture_diagram) {
-      console.log("Attempting to render diagram");
       renderDiagram();
     }
   }, [results.architecture_diagram]);
@@ -50,16 +49,13 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
   const renderDiagram = async () => {
     if (results.architecture_diagram) {
       try {
-        console.log("Rendering diagram with content:", results.architecture_diagram);
         const { svg } = await mermaid.render(
-          "mermaid-diagram",
+          'mermaid-diagram',
           results.architecture_diagram
         );
-        console.log("Diagram rendered successfully");
         setDiagramSvg(svg);
         setDiagramError(null);
       } catch (error) {
-        console.error("Error rendering Mermaid diagram:", error);
         setDiagramError(
           `Failed to render the architecture diagram: ${
             error instanceof Error ? error.message : String(error)
@@ -70,24 +66,38 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
     }
   };
 
-  const formatResults = (results: any) => {
-    if (results.error) {
+  const formatResults = (analysisResults: any) => {
+    if (!analysisResults) {
+      return <div>No analysis results available.</div>;
+    }
+
+    if (analysisResults.error) {
       return (
         <div className="text-red-500">
           <h3 className="text-xl font-semibold">Error</h3>
-          <p>{results.error}</p>
+          <p>{analysisResults.error}</p>
         </div>
       );
     }
 
-    return Object.entries(results).map(([key, value]) => (
-      <div key={key} className="mb-4">
-        <h3 className="text-xl font-semibold">{formatKey(key)}</h3>
-        {key === 'html_structure' && typeof value === 'object' && value !== null
-          ? renderHtmlStructure(value as Record<string, number>)
-          : renderValue(value)}
-      </div>
-    ));
+    return (
+      <>
+        {Object.entries(analysisResults).map(([key, value]) => (
+          <div key={key} className="mb-4">
+            <h3 className="text-xl font-semibold">{formatKey(key)}</h3>
+            {key === 'html_structure' && typeof value === 'object' && value !== null
+              ? renderHtmlStructure(value as Record<string, number>)
+              : renderValue(value)}
+          </div>
+        ))}
+        {analysisResults.hosting_provider && (
+          <div className="mb-4">
+            <h3 className="text-xl font-semibold">Hosting Provider</h3>
+            <p>{analysisResults.hosting_provider}</p>
+          </div>
+        )}
+      </>
+    );
   };
 
   const formatKey = (key: string) => {
@@ -112,55 +122,10 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
             </li>
           ))}
         </ul>
-        <h4 className="text-lg font-semibold mt-2">Structure Analysis:</h4>
-        <ul className="list-disc list-inside">
-          <li>Heading structure: {analyzeHeadings(structure)}</li>
-          <li>Semantic elements: {analyzeSemanticElements(structure)}</li>
-          <li>Interactive elements: {analyzeInteractiveElements(structure)}</li>
-        </ul>
       </div>
     );
   };
 
-  const analyzeHeadings = (structure: Record<string, number>) => {
-    const headings = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-    const headingCounts = headings.map(heading => structure[heading] || 0);
-    const totalHeadings = headingCounts.reduce((sum, count) => sum + count, 0);
-  
-    if (totalHeadings === 0) {
-      return 'No headings found';
-    }
-  
-    const headingRatio = headingCounts.map(count => ((count / totalHeadings) * 100).toFixed(2));
-    const mostCommonHeading = headings[headingCounts.indexOf(Math.max(...headingCounts))];
-  
-    return `Total headings: ${totalHeadings}, Most common heading: ${mostCommonHeading} (${headingRatio}%)`;
-  };
-  
-  const analyzeSemanticElements = (structure: Record<string, number>) => {
-    const semanticElements = ['header', 'nav', 'main', 'section', 'article', 'aside', 'footer'];
-    const semanticElementCounts = semanticElements.map(element => structure[element] || 0);
-    const totalSemanticElements = semanticElementCounts.reduce((sum, count) => sum + count, 0);
-  
-    if (totalSemanticElements === 0) {
-      return 'No semantic elements found';
-    }
-  
-    return `Total semantic elements: ${totalSemanticElements}`;
-  };
-  
-  const analyzeInteractiveElements = (structure: Record<string, number>) => {
-    const interactiveElements = ['a', 'button', 'input', 'select', 'textarea'];
-    const interactiveElementCounts = interactiveElements.map(element => structure[element] || 0);
-    const totalInteractiveElements = interactiveElementCounts.reduce((sum, count) => sum + count, 0);
-  
-    if (totalInteractiveElements === 0) {
-      return 'No interactive elements found';
-    }
-  
-    return `Total interactive elements: ${totalInteractiveElements}`;
-  };
-  
   const renderValue = (value: any) => {
     if (typeof value === 'object' && value !== null) {
       return (
@@ -195,6 +160,6 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results }) => {
       {formatResults(results.analysis_results)}
     </div>
   );
-  };
-  
-  export default ResultsDisplay;
+});
+
+export default ResultsDisplay;
