@@ -1,21 +1,24 @@
 import axios, { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
 import { JSDOM } from 'jsdom';
-import * as dns from 'dns';
 import { URL } from 'url';
 import { promises as dnsPromises } from 'dns';
+import * as https from 'https';
 
-export async function analyzeWebsite(url: string) {
+export async function analyzeWebsite(url: string, options: { rejectUnauthorized: boolean }) {
   try {
-    const response = await axios.get(url, {
+    const axiosConfig = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
       maxRedirects: 5,
-    });
+      httpsAgent: new https.Agent({ rejectUnauthorized: options.rejectUnauthorized }),
+    };
+
+    const response = await axios.get(url, axiosConfig);
 
     const dom = new JSDOM(response.data);
     const document = dom.window.document;
-    const hostingProvider = await detectHostingProvider(response.headers, url, response.data);
+    const hostingProvider = await detectHostingProvider(url);
 
     const analysis = {
       html_structure: analyzeHtmlStructure(document),
@@ -30,6 +33,9 @@ export async function analyzeWebsite(url: string) {
       security_analysis: analyzeSecurity(response.headers),
       performance_analysis: analyzePerformance(response.headers),
       accessibility_analysis: analyzeAccessibility(document),
+      architecture: detectArchitecture(response.data, document),
+      marketing_technologies: detectMarketingTechnologies(response.data, document),
+      social_links: detectSocialLinks(document),
     };
 
     const architectureDiagram = generateArchitectureDiagram(analysis);
@@ -40,6 +46,7 @@ export async function analyzeWebsite(url: string) {
     };
   } catch (error) {
     console.error('Error analyzing website:', error);
+
     if (axios.isAxiosError(error)) {
       if (error.response) {
         throw new Error(`HTTP error ${error.response.status}: ${error.response.statusText}`);
@@ -47,6 +54,15 @@ export async function analyzeWebsite(url: string) {
         throw new Error('No response received from the server. The website might be down or blocking our requests.');
       }
     }
+
+    // Detailed error logging
+    if (error instanceof Error) {
+      const errorMessage = error.message;
+      const errorStack = error.stack;
+      console.error('Error details:', { message: errorMessage, stack: errorStack });
+      throw new Error(`An unexpected error occurred while analyzing the website: ${errorMessage}`);
+    }
+
     throw new Error('An unexpected error occurred while analyzing the website.');
   }
 }
@@ -135,6 +151,7 @@ function detectJavascriptLibraries(html: string, doc: Document): string[] {
     { name: 'Lodash', keyword: 'lodash' },
     { name: 'Moment.js', keyword: 'moment' },
     { name: 'Axios', keyword: 'axios' },
+    { name: 'D3.js', keyword: 'd3' },
   ];
 
   jsLibraries.forEach(({ name, keyword }) => {
@@ -164,13 +181,95 @@ function detectServerTechnologies(headers: AxiosResponseHeaders | RawAxiosRespon
   }
   if (headers['x-aspnet-version']) technologies.push('ASP.NET');
   if (headers['x-rails-version']) technologies.push('Ruby on Rails');
+  if (headers['via'] && headers['via'].includes('cloudflare')) technologies.push('Cloudflare');
   return technologies;
 }
 
+// Detect Website Architecture (SPA, MPA, SSG, SSR)
+function detectArchitecture(html: string, doc: Document): string {
+  // Check for Server-Side Rendering (SSR)
+  if (doc.querySelector('script[src*="next"]') || html.includes('__NEXT_DATA__')) {
+    return 'SSR (Server-Side Rendering)';
+  }
+
+  // Check for Static Site Generation (SSG)
+  if (doc.querySelector('script[src*="gatsby"]') || doc.querySelector('meta[content="Gatsby"]')) {
+    return 'SSG (Static Site Generation)';
+  }
+  if (doc.querySelector('script[src*="jekyll"]') || doc.querySelector('meta[content="Jekyll"]')) {
+    return 'SSG (Static Site Generation)';
+  }
+  if (doc.querySelector('script[src*="hugo"]') || doc.querySelector('meta[content="Hugo"]')) {
+    return 'SSG (Static Site Generation)';
+  }
+
+  // Check for Single Page Application (SPA)
+  if (doc.querySelector('script[src*="single-spa"]') || doc.querySelector('script[src*="react"]') || html.includes('window.__INITIAL_STATE__')) {
+    return 'SPA (Single Page Application)';
+  }
+  if (doc.querySelector('script[src*="angular"]') || html.includes('ng-version')) {
+    return 'SPA (Single Page Application)';
+  }
+  if (doc.querySelector('script[src*="vue"]') || html.includes('window.__INITIAL_STATE__')) {
+    return 'SPA (Single Page Application)';
+  }
+
+  // Default to Multi-Page Application (MPA)
+  return 'MPA (Multi-Page Application)';
+}
+
+// Marketing Technologies Detection
+function detectMarketingTechnologies(html: string, doc: Document): string[] {
+  const marketingTechs = [];
+  const techs = [
+    { name: 'Google Analytics', keyword: 'google-analytics', regex: /analytics\.js/ },
+    { name: 'Google Tag Manager', keyword: 'gtm', regex: /gtm\.js/ },
+    { name: 'Facebook Pixel', keyword: 'fbevents', regex: /fbevents\.js/ },
+    { name: 'Hotjar', keyword: 'hotjar', regex: /static\.hotjar\.com/ },
+    { name: 'HubSpot', keyword: 'hubspot', regex: /js\.hubspot\.com/ },
+    { name: 'Marketo', keyword: 'marketo', regex: /marketo\.com/ },
+    { name: 'Salesforce', keyword: 'salesforce', regex: /salesforce\.com/ },
+    { name: 'Mixpanel', keyword: 'mixpanel', regex: /cdn\.mixpanel\.com/ },
+    { name: 'Crazy Egg', keyword: 'crazyegg', regex: /crazyegg\.com/ },
+    { name: 'Intercom', keyword: 'intercom', regex: /intercom\.io/ },
+    { name: 'Kissmetrics', keyword: 'kissmetrics', regex: /i\.kissmetrics\.com/ },
+  ];
+
+  techs.forEach(({ name, keyword, regex }) => {
+    if (html.includes(keyword) || doc.querySelector(`script[src*="${keyword}"]`) || regex.test(html)) {
+      marketingTechs.push(name);
+    }
+  });
+
+  return marketingTechs;
+}
+
+// Social Links Detection
+function detectSocialLinks(doc: Document): string[] {
+  const socialLinks = [];
+  const socialPlatforms = [
+    'facebook.com',
+    'twitter.com',
+    'linkedin.com',
+    'instagram.com',
+    'youtube.com',
+    'tiktok.com',
+  ];
+
+  socialPlatforms.forEach((platform) => {
+const links = Array.from(doc.querySelectorAll(`a[href*="${platform}"]`)).map(link => link.getAttribute('href'));
+  });
+
+  return socialLinks;
+}
+
 // Hosting Provider Detection
-async function detectHostingProvider(headers: unknown, url: string, data: any): Promise<string> {
+async function detectHostingProvider(url: string): Promise<string> {
   const apiKey = "wu4prqwwhtubn2999uxru4voyt903eflke963sow5mzso0x50j53uzl11w337q4gbxx6m9"; // Your API key
   const domain = new URL(url).hostname;
+
+  console.debug("API Key:", apiKey);
+  console.debug("Domain extracted from URL:", domain);
 
   try {
     // Call the Who Hosts This API
@@ -179,21 +278,28 @@ async function detectHostingProvider(headers: unknown, url: string, data: any): 
         key: apiKey,
         url: domain,
       },
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }),
     });
 
+    console.debug("API Response:", response.data);
+
     const { result, results } = response.data;
+
+    console.debug("Result object from API response:", result);
+    console.debug("Results array from API response:", results);
 
     if (result.code === 200 && results && results.length > 0) {
       // Assuming we want to return the ISP name
       const ispName = results[0].isp_name;
-      return `Hosting Provider: ${ispName}`;
+      console.debug("ISP Name found:", ispName);
+      return `Provider: ${ispName}`;
     } else {
       console.error('No hosting provider found in API response:', response.data);
-      return 'UnknownA';
+      return 'unable to find provider';
     }
   } catch (error) {
     console.error('Error calling Who Hosts This API:', error);
-    return 'UnknownB'; // Fallback if API call fails
+    return 'Host Finder Error'; // Fallback if API call fails
   }
 }
 
@@ -215,6 +321,7 @@ function detectCMS(html: string, doc: Document): string {
   if (html.includes('Joomla') || doc.querySelector('meta[name="generator"][content*="Joomla"]')) return 'Joomla';
   if (html.includes('ghost') || doc.querySelector('meta[name="generator"][content*="Ghost"]')) return 'Ghost';
   if (html.includes('contentful') || doc.querySelector('meta[name="generator"][content*="Contentful"]')) return 'Contentful';
+  if (html.includes('hubspot') || doc.querySelector('meta[name="generator"][content*="HubSpot"]')) return 'HubSpot';
   return 'Unknown';
 }
 
@@ -243,7 +350,7 @@ function generateArchitectureDiagram(analysis: any): string {
       if (items && items.length > 0) {
         const id = getNextId();
         diagram += `  ${parentId} --> ${id}[${label}]\n`;
-        items.forEach((item, index) => {
+        items.forEach((item) => {
           const itemId = getNextId();
           diagram += `  ${id} --> ${itemId}["${item.replace(/"/g, "'")}"]\n`;
         });
@@ -269,6 +376,29 @@ function generateArchitectureDiagram(analysis: any): string {
     if (analysis.ecommerce_platform && analysis.ecommerce_platform !== 'Unknown') {
       diagram += `  B --> ${getNextId()}["E-commerce: ${analysis.ecommerce_platform.replace(/"/g, "'")}"]\n`;
     }
+
+    if (analysis.architecture && analysis.architecture !== 'Unknown') {
+      diagram += `  B --> ${getNextId()}["Architecture: ${analysis.architecture.replace(/"/g, "'")}"]\n`;
+    }
+
+    if (analysis.marketing_technologies && analysis.marketing_technologies.length > 0) {
+      addNodes('B', analysis.marketing_technologies, 'Marketing Technologies');
+    }
+
+    // Add clickable social links node
+    if (analysis.social_links && analysis.social_links.length > 0) {
+      const socialLinksNode = getNextId();
+      diagram += `  B --> ${socialLinksNode}[Social Links]\n`;
+      analysis.social_links.forEach((link) => {
+        const socialLinkId = getNextId();
+        diagram += `  ${socialLinksNode} --> ${socialLinkId}["<a href='${link}' target='_blank'>${link}</a>"]\n`;
+      });
+    }
+
+    diagram += `  B --> ${getNextId()}[SEO Analysis]\n`;
+    diagram += `  B --> ${getNextId()}[Security Analysis]\n`;
+    diagram += `  B --> ${getNextId()}[Performance Analysis]\n`;
+    diagram += `  B --> ${getNextId()}[Accessibility Analysis]\n`;
 
     console.log('Diagram generated:', diagram);
     return diagram;

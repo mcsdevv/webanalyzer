@@ -5,12 +5,11 @@ interface ResultsDisplayProps {
   results: {
     analysis_results: {
       error?: string;
-      basic_info: {
+      basic_info?: {
         title: string;
         description: string;
       };
-      html_structure: Record<string, number>;
-      meta_tags?: Record<string, string>;
+      html_structure?: Record<string, number>;
       css_frameworks?: string[];
       javascript_libraries?: string[];
       server_technologies?: string[];
@@ -18,10 +17,13 @@ interface ResultsDisplayProps {
       cdn_provider?: string;
       cms?: string;
       ecommerce_platform?: string;
-      seo_analysis: Record<string, any>;
-      security_analysis: Record<string, any>;
-      performance_analysis: Record<string, any>;
-      accessibility_analysis: Record<string, any>;
+      seo_analysis?: Record<string, any>;
+      security_analysis?: Record<string, any>;
+      performance_analysis?: Record<string, any>;
+      accessibility_analysis?: Record<string, any>;
+      architecture?: string;
+      marketing_technologies?: string[];
+      social_links?: string[];
     };
     architecture_diagram: string;
   };
@@ -82,20 +84,75 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = React.memo(({ results }) =
 
     return (
       <>
-        {Object.entries(analysisResults).map(([key, value]) => (
-          <div key={key} className="mb-4">
-            <h3 className="text-xl font-semibold">{formatKey(key)}</h3>
-            {key === 'html_structure' && typeof value === 'object' && value !== null
-              ? renderHtmlStructure(value as Record<string, number>)
-              : renderValue(value)}
+        {/* Display Basic Info */}
+        {analysisResults.basic_info && (
+          <div className="mb-4">
+            <h3 className="text-xl font-semibold">Basic Information</h3>
+            {analysisResults.basic_info.title && (
+              <p><strong>Title:</strong> {analysisResults.basic_info.title}</p>
+            )}
+            {analysisResults.basic_info.description && (
+              <p><strong>Description:</strong> {analysisResults.basic_info.description}</p>
+            )}
           </div>
-        ))}
+        )}
+
+        {/* Display Hosting Provider */}
         {analysisResults.hosting_provider && (
           <div className="mb-4">
             <h3 className="text-xl font-semibold">Hosting Provider</h3>
             <p>{analysisResults.hosting_provider}</p>
           </div>
         )}
+
+        {/* Display Architecture */}
+        {analysisResults.architecture && (
+          <div className="mb-4">
+            <h3 className="text-xl font-semibold">Architecture</h3>
+            <p>{analysisResults.architecture}</p>
+          </div>
+        )}
+
+        {/* Display Marketing Technologies */}
+        {analysisResults.marketing_technologies && analysisResults.marketing_technologies.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-xl font-semibold">Marketing Technologies</h3>
+            <ul className="list-disc list-inside">
+              {analysisResults.marketing_technologies.map((tech: string, index: number) => (
+                <li key={index}>{tech}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Display Social Links */}
+        {analysisResults.social_links && analysisResults.social_links.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-xl font-semibold">Social Links</h3>
+            <ul className="list-disc list-inside">
+              {analysisResults.social_links.map((link: string, index: number) => (
+                <li key={index}>
+                  <a href={link} target="_blank" rel="noopener noreferrer">{link}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Display Other Analysis Results */}
+        {Object.entries(analysisResults).map(([key, value]) => {
+          if (['basic_info', 'hosting_provider', 'architecture', 'marketing_technologies', 'social_links'].includes(key)) {
+            return null;
+          }
+          return (
+            <div key={key} className="mb-4">
+              <h3 className="text-xl font-semibold">{formatKey(key)}</h3>
+              {key === 'html_structure' && typeof value === 'object' && value !== null
+                ? renderHtmlStructure(value as Record<string, number>)
+                : renderValue(value)}
+            </div>
+          );
+        })}
       </>
     );
   };
