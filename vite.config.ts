@@ -20,5 +20,6 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
-  }
+  },
+  base: '/' // Ensure this is set to '/' for production builds
 })
