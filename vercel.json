@@ -1,11 +1,11 @@
 {
-    "rewrites": [
-      { "source": "/api/(.*)", "destination": "/api/analyze" },
-      { "source": "/(.*)", "destination": "/index.html" }
-    ],
+    "version": 2,
     "builds": [
       { "src": "api/analyze.ts", "use": "@vercel/node" },
       { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
     ],
-    "buildCommand": "npm run build"
+    "routes": [
+      { "src": "/api/analyze", "methods": ["POST", "OPTIONS"], "dest": "/api/analyze.ts" },
+      { "src": "/(.*)", "dest": "/index.html" }
+    ]
   }

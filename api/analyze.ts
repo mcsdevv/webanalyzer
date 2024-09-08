@@ -1,7 +1,6 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { analyzeWebsite } from '../src/utils/analyzeWebsite';
+const { analyzeWebsite } = require('../src/utils/analyzeWebsite');
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async (req, res) => {
   console.log('Request received:', req.method, req.url);
   console.log('Request headers:', req.headers);
   console.log('Request body:', req.body);
@@ -36,4 +35,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
-}
+};
