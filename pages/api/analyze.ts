@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { analyzeWebsite } from '../../src/utils/analyzeWebsite';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Log the request method and body for debugging
   console.log('Request method:', req.method);
   console.log('Request body:', req.body);
 
@@ -18,12 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error(`Error analyzing website:`, error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
     }
-  } else if (req.method === 'GET') {
-    // Handle GET requests for testing
-    return res.status(200).json({ message: 'GET request received' });
   } else {
-    res.setHeader('Allow', ['GET', 'POST']);
+    res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
-//dummy entry to tigger vercel build
