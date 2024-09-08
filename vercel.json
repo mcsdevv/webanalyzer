@@ -1,12 +1,9 @@
 {
     "version": 2,
     "builds": [
-      { "src": "api/analyze.ts", "use": "@vercel/node" },
-      { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
+      { "src": "api/analyze.ts", "use": "@vercel/node@2.5.24" }
     ],
     "routes": [
-      { "src": "/api/analyze", "methods": ["POST", "OPTIONS"], "dest": "/api/analyze.ts" },
-      { "src": "/assets/(.*)", "dest": "/assets/$1" },
-      { "src": "/(.*)", "dest": "/index.html" }
+      { "src": "/api/analyze", "methods": ["POST", "OPTIONS"], "dest": "/api/analyze.ts" }
     ]
   }
