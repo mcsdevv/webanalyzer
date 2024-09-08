@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import UserInterface from './components/UserInterface';
 import ResultsDisplay from './components/ResultsDisplay';
@@ -8,21 +8,6 @@ function App() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const memoizedResults = useMemo(() => results, [results]);
-    useEffect(() => {
-        console.log('App Component Mounted');
-        return () => {
-            console.log('App Component Unmounted');
-        };
-    }, []);
-    useEffect(() => {
-        console.log('Results state changed:', results);
-    }, [results]);
-    useEffect(() => {
-        console.log('Loading state changed:', loading);
-    }, [loading]);
-    useEffect(() => {
-        console.log('Error state changed:', error);
-    }, [error]);
     const handleAnalyze = useCallback(async (url) => {
         setLoading(true);
         setError(null);
@@ -36,21 +21,12 @@ function App() {
         catch (error) {
             console.error('Error during analysis:', error);
             if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
-                console.error('Error response:', error.response.data);
-                console.error('Error status:', error.response.status);
-                console.error('Error headers:', error.response.headers);
-                setError(`Request failed with status code ${error.response.status}: ${error.response.data.error || error.response.data}`);
+                setError(`Request failed with status code ${error.response.status}: ${error.response.data.error || 'Unknown error'}`);
             }
             else if (error.request) {
-                // The request was made but no response was received
-                console.error('Error request:', error.request);
                 setError('No response received from the server');
             }
             else {
-                // Something happened in setting up the request that triggered an Error
-                console.error('Error setting up request:', error.message);
                 setError(error.message || 'An unexpected error occurred');
             }
         }
