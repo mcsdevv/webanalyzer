@@ -29,7 +29,7 @@ function App() {
         setResults(null);
         try {
             console.log(`Sending analysis request for URL: ${url}`);
-            const response = await axios.post('http://localhost:3001/analyze', { url }, { timeout: 30000 });
+            const response = await axios.post('/api/analyze', { url }, { timeout: 30000 });
             console.log('Received results:', response.data);
             setResults(response.data);
         }
