@@ -7,10 +7,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && tsc -p tsconfig.server.json",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "npx tsx ./src/server.tsx",
+    "server": "node --experimental-specifier-resolution=node --loader ts-node/esm ./src/server.tsx",
     "vercel-build": "npm run build",
     "start": "node server.js"
   },
