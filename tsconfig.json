@@ -1,13 +1,18 @@
 {
   "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
     "jsx": "react-jsx",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "downlevelIteration": true
-
+    "downlevelIteration": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "$root/*": ["src/*"]
+    }
   },
-
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }
