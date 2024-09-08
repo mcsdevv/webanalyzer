@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { analyzeWebsite } from '../../src/utils/analyzeWebsite';
+import { analyzeWebsite } from '../src/utils/analyzeWebsite';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Request method:', req.method);
