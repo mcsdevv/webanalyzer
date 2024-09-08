@@ -1,10 +1,10 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "ES2020",
+    "outDir": "./dist",
     "module": "CommonJS",
-    "noEmit": true,
-    "allowImportingTsExtensions": true,
-    "jsx": "react-jsx"
+    "noEmit": false
   },
-  "include": ["src", "server.tsx"]
+  "include": ["src", "server.tsx"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }

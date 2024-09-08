@@ -104,8 +104,7 @@ function analyzeAccessibility(document: Document): Record<string, any> {
   return {
     semanticHTML: document.querySelectorAll('header, nav, main, section, article, aside, footer').length > 0,
     altTextForImages: Array.from(document.querySelectorAll('img')).every(image => image.alt),
-    descriptiveLinkText: Array.from(document.querySelectorAll('a')).every(link => link.textContent.trim() !== ''),
-  };
+descriptiveLinkText: Array.from(document.querySelectorAll('a')).every(link => (link.textContent ?? '').trim() !== ''),  };
 }
 
 // HTML Structure Analysis
@@ -121,7 +120,7 @@ function analyzeHtmlStructure(doc: Document): Record<string, number> {
 
 // CSS Framework Detection
 function detectCssFrameworks(html: string, doc: Document): string[] {
-  const frameworks = [];
+  const frameworks: string[] = [];
   const cssFrameworks = [
     { name: 'Bootstrap', keyword: 'bootstrap' },
     { name: 'Tailwind CSS', keyword: 'tailwind' },
@@ -142,7 +141,7 @@ function detectCssFrameworks(html: string, doc: Document): string[] {
 
 // JavaScript Library Detection
 function detectJavascriptLibraries(html: string, doc: Document): string[] {
-  const libraries = [];
+  const libraries: string[] = [];
   const jsLibraries = [
     { name: 'React', keyword: 'react' },
     { name: 'jQuery', keyword: 'jquery' },
@@ -220,7 +219,7 @@ function detectArchitecture(html: string, doc: Document): string {
 
 // Marketing Technologies Detection
 function detectMarketingTechnologies(html: string, doc: Document): string[] {
-  const marketingTechs = [];
+  const marketingTechs: string[] = [];
   const techs = [
     { name: 'Google Analytics', keyword: 'google-analytics', regex: /analytics\.js/ },
     { name: 'Google Tag Manager', keyword: 'gtm', regex: /gtm\.js/ },
@@ -246,7 +245,7 @@ function detectMarketingTechnologies(html: string, doc: Document): string[] {
 
 // Social Links Detection
 function detectSocialLinks(doc: Document): string[] {
-  const socialLinks = [];
+  const socialLinks: string[] = [];
   const socialPlatforms = [
     'facebook.com',
     'twitter.com',
@@ -389,7 +388,7 @@ function generateArchitectureDiagram(analysis: any): string {
     if (analysis.social_links && analysis.social_links.length > 0) {
       const socialLinksNode = getNextId();
       diagram += `  B --> ${socialLinksNode}[Social Links]\n`;
-      analysis.social_links.forEach((link) => {
+      analysis.social_links.forEach((link: any) => {
         const socialLinkId = getNextId();
         diagram += `  ${socialLinksNode} --> ${socialLinkId}["<a href='${link}' target='_blank'>${link}</a>"]\n`;
       });

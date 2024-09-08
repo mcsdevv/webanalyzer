@@ -1,9 +1,15 @@
 {
     "version": 2,
     "builds": [
-      { "src": "api/analyze.ts", "use": "@vercel/node@2.5.24" }
+      {
+        "src": "package.json",
+        "use": "@vercel/node"
+      }
     ],
     "routes": [
-      { "src": "/api/analyze", "methods": ["POST", "OPTIONS"], "dest": "/api/analyze.ts" }
+      {
+        "src": "/(.*)",
+        "dest": "/api/analyze.ts"
+      }
     ]
   }

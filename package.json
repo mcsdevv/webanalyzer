@@ -1,7 +1,9 @@
 {
-  "name": "webanalyzer",
+  "name": "rdxwebanalyzer",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.0",  "engines": {
+    "node": ">=14.0.0"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +11,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "npx tsx ./src/server.tsx",
-    "vercel-build": "vite build --mode production",
+    "vercel-build": "npm run build",
     "start": "node server.js"
   },
   "dependencies": {
