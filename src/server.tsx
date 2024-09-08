@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import winston from 'winston';
 import { analyzeWebsite } from './utils/analyzeWebsite';
@@ -30,31 +30,31 @@ async function startServer() {
   app.use(express.json());
 
   // Error handling middleware
-  app.use((err, req, res, next) => {
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     logger.error('Error occurred:', err);
     res.status(500).json({ error: 'An unexpected error occurred' });
   });
 
-  app.post('/analyze', async (req, res) => {
+  app.post('/analyze', async (req: Request, res: Response) => {
     try {
       const { url } = req.body;
       logger.info(`Received analysis request for URL: ${url}`);
       const result = await analyzeWebsite(url, { rejectUnauthorized: false });
       logger.info(`Analyzed website: ${url}`);
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Error analyzing website: ${req.body.url}`, error);
       res.status(500).json({ error: 'An unexpected error occurred' });
     }
   });
 
   // Serve index.html for all routes
-  app.use('*', async (req, res, next) => {
+  app.use('*', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const url = req.originalUrl;
       const template = await vite.transformIndexHtml(url, path.resolve(__dirname, 'index.html'));
       res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-    } catch (e) {
+    } catch (e: any) {
       vite.ssrFixStacktrace(e);
       next(e);
     }
@@ -68,13 +68,13 @@ async function startServer() {
   });
 
   // Catch unhandled exceptions
-  process.on('uncaughtException', (error) => {
+  process.on('uncaughtException', (error: Error) => {
     logger.error('Unhandled exception:', error);
     process.exit(1);
   });
 
   // Catch unhandled promise rejections
-  process.on('unhandledRejection', (reason) => {
+  process.on('unhandledRejection', (reason: any) => {
     logger.error('Unhandled rejection:', reason);
     process.exit(1);
   });
