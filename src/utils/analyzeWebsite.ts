@@ -1,7 +1,6 @@
 import axios, { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
 import { JSDOM } from 'jsdom';
 import { URL } from 'url';
-import { promises as dnsPromises } from 'dns';
 import * as https from 'https';
 
 export async function analyzeWebsite(url: string, options: { rejectUnauthorized: boolean }) {
@@ -104,7 +103,7 @@ function analyzeAccessibility(document: Document): Record<string, any> {
   return {
     semanticHTML: document.querySelectorAll('header, nav, main, section, article, aside, footer').length > 0,
     altTextForImages: Array.from(document.querySelectorAll('img')).every(image => image.alt),
-descriptiveLinkText: Array.from(document.querySelectorAll('a')).every(link => (link.textContent ?? '').trim() !== ''),  };
+descriptiveLinkText: Array.from(document.querySelectorAll('a')).every(link => link.textContent?.trim() !== ''),  };
 }
 
 // HTML Structure Analysis
@@ -255,9 +254,10 @@ function detectSocialLinks(doc: Document): string[] {
     'tiktok.com',
   ];
 
-  socialPlatforms.forEach((platform) => {
-const links = Array.from(doc.querySelectorAll(`a[href*="${platform}"]`)).map(link => link.getAttribute('href'));
-  });
+socialPlatforms.forEach((platform) => {
+  const links = Array.from(doc.querySelectorAll(`a[href*="${platform}"]`)).map(link => link.getAttribute('href')?.toString());
+  socialLinks.push(...links.filter(link => link !== undefined));
+});
 
   return socialLinks;
 }

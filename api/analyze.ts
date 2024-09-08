@@ -29,12 +29,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('Analysis result:', result);
       return res.status(200).json(result);
     } catch (error) {
-      console.error(`Error analyzing website:`, error);
-      return res.status(500).json({ error: 'An unexpected error occurred', details: error.message });
+      if (error instanceof Error) {
+        console.error(`Error analyzing website:`, error);
+        return res.status(500).json({ error: 'An unexpected error occurred', details: error.message });
+      } else {
+        console.error(`Unknown error:`, error);
+        return res.status(500).json({ error: 'An unexpected error occurred' });
+      }
     }
-  } else {
-    console.log(`Method ${req.method} not allowed`);
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

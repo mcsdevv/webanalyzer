@@ -30,7 +30,7 @@ async function startServer() {
   app.use(express.json());
 
   // Error handling middleware
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     logger.error('Error occurred:', err);
     res.status(500).json({ error: 'An unexpected error occurred' });
   });

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import UserInterface from './components/UserInterface';
 import ResultsDisplay from './components/ResultsDisplay';
