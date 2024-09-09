@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { analyzeWebsite } from './utils/analyzeWebsite';
+import { analyzeWebsite } from './utils/analyzeWebsite.ts';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
