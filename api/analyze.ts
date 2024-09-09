@@ -26,7 +26,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(result);
     } catch (error) {
       console.error('Error analyzing website:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      return res.status(500).json({ 
+        error: 'An unexpected error occurred', 
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
