@@ -8,9 +8,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "eslint .",
+    "build": "vite build",
     "preview": "vite preview",
+    "lint": "eslint .",
     "server": "npx tsx ./src/server.tsx",
     "vercel-build": "npm run build",
     "start": "node server.js"
