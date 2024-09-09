@@ -1,90 +1,32 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
-import winston from 'winston';
 import { analyzeWebsite } from './utils/analyzeWebsite';
-import { createServer as createViteServer } from 'vite';
-import path from 'path';
-import http from 'http';
 
-async function startServer() {
-  const app = express();
+const app = express();
+const port = 3001;
 
-  // Create a logger instance
-  const logger = winston.createLogger({
-    level: 'verbose',
-    format: winston.format.json(),
-    transports: [new winston.transports.File({ filename: 'server.log' })],
-    exitOnError: false,
-  });
+app.use(cors());
+app.use(express.json());
 
-  // Create Vite server in middleware mode
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: 'custom',
-  });
-
-  // Use Vite's middleware to handle requests and enable HMR
-  app.use(vite.middlewares);
-
-  app.use(cors());
-  app.use(express.json());
-
-  // Error handling middleware
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    logger.error('Error occurred S:', err);
-    res.status(500).json({ error: 'An unexpected error occurred s:' });
-  });
-
-  app.post('/analyze', async (req: Request, res: Response) => {
-    try {
-      const { url } = req.body;
-      logger.info(`Received analysis request for URL S: ${url}`);
-      const result = await analyzeWebsite(url, { rejectUnauthorized: false });
-      logger.info(`Analyzed website S: ${url}`);
-      res.json(result);
-    } catch (error: any) {
-      logger.error(`Error analyzing website S: ${req.body.url}`, error);
-      res.status(500).json({ error: 'An unexpected error occurred S:' });
+app.post('/api/analyze', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
     }
-  });
+    console.log('Analyzing URL:', url);
+    const result = await analyzeWebsite(url, { rejectUnauthorized: false });
+    console.log('Analysis result:', result);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Error analyzing website:', error);
+    return res.status(500).json({
+      error: 'An unexpected error occurred',
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
 
-  // Serve index.html for all routes
-  app.use('*', async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const url = req.originalUrl;
-      const template = await vite.transformIndexHtml(url, path.resolve(__dirname, 'index.html'));
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-    } catch (e: any) {
-      vite.ssrFixStacktrace(e);
-      next(e);
-    }
-  });
-
-  const server = http.createServer(app);
-
-  server.listen(3001, () => {
-    logger.info('Server listening on port 3001');
-    console.log('Server listening on port 3001');
-  });
-
-  // Catch unhandled exceptions
-  process.on('uncaughtException', (error: Error) => {
-    logger.error('Unhandled exception:', error);
-    process.exit(1);
-  });
-
-  // Catch unhandled promise rejections
-  process.on('unhandledRejection', (reason: any) => {
-    logger.error('Unhandled rejection:', reason);
-    process.exit(1);
-  });
-
-  // Redirect console output to server.log
-  console.log = (...args) => logger.info(args.join(' '));
-  console.error = (...args) => logger.error(args.join(' '));
-  console.warn = (...args) => logger.warn(args.join(' '));
-  console.info = (...args) => logger.info(args.join(' '));
-  console.debug = (...args) => logger.debug(args.join(' '));
-}
-
-startServer();
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});

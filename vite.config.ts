@@ -7,6 +7,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  // The proxy configuration will only be used for local development
   server: {
     proxy: {
       '/api': {
