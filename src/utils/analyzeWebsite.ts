@@ -5,6 +5,9 @@ import * as https from 'https';
 
 export async function analyzeWebsite(url: string, options: { rejectUnauthorized: boolean }) {
   try {
+    // Log the URL and options passed to the function
+    console.log('Analyzing URL:', url, 'with options:', options);
+
     const axiosConfig = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -15,8 +18,15 @@ export async function analyzeWebsite(url: string, options: { rejectUnauthorized:
 
     const response = await axios.get(url, axiosConfig);
 
+    // Log the response object returned by Axios
+    console.log('Axios response:', response);
+
     const dom = new JSDOM(response.data);
     const document = dom.window.document;
+
+    // Log the JSDOM document object
+    console.log('JSDOM document:', document);
+
     const hostingProvider = await detectHostingProvider(url);
 
     const analysis = {
@@ -37,6 +47,23 @@ export async function analyzeWebsite(url: string, options: { rejectUnauthorized:
       social_links: detectSocialLinks(document),
     };
 
+    // Log the results of each analysis function
+    console.log('HTML structure:', analysis.html_structure);
+    console.log('CSS frameworks:', analysis.css_frameworks);
+    console.log('JavaScript libraries:', analysis.javascript_libraries);
+    console.log('Server technologies:', analysis.server_technologies);
+    console.log('Hosting provider:', analysis.hosting_provider);
+    console.log('CDN provider:', analysis.cdn_provider);
+    console.log('CMS:', analysis.cms);
+    console.log('E-commerce platform:', analysis.ecommerce_platform);
+    console.log('SEO analysis:', analysis.seo_analysis);
+    console.log('Security analysis:', analysis.security_analysis);
+    console.log('Performance analysis:', analysis.performance_analysis);
+    console.log('Accessibility analysis:', analysis.accessibility_analysis);
+    console.log('Architecture:', analysis.architecture);
+    console.log('Marketing technologies:', analysis.marketing_technologies);
+    console.log('Social links:', analysis.social_links);
+
     const architectureDiagram = generateArchitectureDiagram(analysis);
 
     return {
@@ -45,6 +72,7 @@ export async function analyzeWebsite(url: string, options: { rejectUnauthorized:
     };
   } catch (error) {
     console.error('Error analyzing website:', error);
+console.log('Analyzing URL:', url, 'with options:', options);
 
     if (axios.isAxiosError(error)) {
       if (error.response) {
