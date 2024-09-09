@@ -3,6 +3,9 @@ import axios from 'axios';
 import UserInterface from './components/UserInterface';
 import ResultsDisplay from './components/ResultsDisplay';
 
+// Use the environment variable
+const API_URL = import.meta.env.VITE_API_URL || '/api/analyze';
+
 function App() {
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -13,43 +16,42 @@ function App() {
     setError(null);
     setResults(null);
     try {
-      console.log(`Sending analysis request for URL A: ${url}`);
+      console.log(`Sending analysis request for URL: ${url}`);
       let response;
       try {
-        response = await axios.post('/api/analyze', { url }, {
+        response = await axios.post(API_URL, { url }, {
           headers: {
             'Content-Type': 'application/json'
           },
           timeout: 30000
         });
-        console.log('Received results A:', response.data);
+        console.log('Received results:', response.data);
       } catch (requestError) {
-        console.error('Error during request A:', requestError);
+        console.error('Error during request:', requestError);
         if (axios.isAxiosError(requestError)) {
-          console.error('Axios error details A:', requestError.toJSON());
-          throw new Error(`Error during request A: ${requestError.message}`);
+          console.error('Axios error details:', requestError.toJSON());
+          throw new Error(`Error during request: ${requestError.message}`);
         } else {
-          throw new Error(`Error during request A: ${(requestError as Error).message}`);
+          throw new Error(`Error during request: ${(requestError as Error).message}`);
         }
       }
       setResults(response.data);
     } catch (error: any) {
-      console.error('Error during analysis A:', error);
+      console.error('Error during analysis:', error);
       if (error.response) {
-        console.error('Server error details A:', error.response.data);
-        setError(`Request failed with status code A: ${error.response.status}: ${error.response.data.error || 'Unknown error'}`);
+        console.error('Server error details:', error.response.data);
+        setError(`Request failed with status code: ${error.response.status}: ${error.response.data.error || 'Unknown error'}`);
       } else if (error.request) {
-        console.error('No response received from the server A:');
-        setError('No response received from the server A:');
+        console.error('No response received from the server:');
+        setError('No response received from the server');
       } else {
-        console.error('Unexpected error A:', error);
+        console.error('Unexpected error:', error);
         setError(error.message || 'An unexpected error occurred');
       }
     } finally {
       setLoading(false);
     }
   }, []);
-  
 
   return (
     <div className="container mx-auto p-4">
