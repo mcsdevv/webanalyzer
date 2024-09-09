@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { analyzeWebsite } from './utils/analyzeWebsite';
+import { analyzeWebsite } from './utils_b/analyzeWebsite';
 
 const app = express();
 const port = 3001;
