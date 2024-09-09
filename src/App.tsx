@@ -16,7 +16,7 @@ function App() {
       console.log(`Sending analysis request for URL A: ${url}`);
       let response;
       try {
-        response = await axios.post('/api/analyze', { url }, {
+        response = await axios.post('/api/analyze.js', { url }, {
           headers: {
             'Content-Type': 'application/json'
           },
