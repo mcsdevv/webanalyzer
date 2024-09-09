@@ -1,17 +1,17 @@
 {
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-      "module": "ESNext",
-      "outDir": "dist",
-      "noEmit": false,
-      "moduleResolution": "node",
-      "allowImportingTsExtensions": false,
-      "esModuleInterop": true,
-      "target": "ES2020",
-      "sourceMap": true,
-      "strict": true,
-      "forceConsistentCasingInFileNames": true
-    },
-    "include": ["api/**/*"],
-    "exclude": ["node_modules"]
-  }
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "dist",
+    "noEmit": false,
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "esModuleInterop": true,
+    "target": "ES2020",
+    "sourceMap": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["api/**/*"],
+  "exclude": ["node_modules"]
+}
