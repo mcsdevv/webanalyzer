@@ -15,23 +15,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Handle POST request
   if (req.method === 'POST') {
-    try {
-      const { url } = req.body;
-      if (!url) {
-        return res.status(400).json({ error: 'URL is required' });
-      }
-      console.log('Analyzing URL:', url);
-      const result = await analyzeWebsite(url, { rejectUnauthorized: false });
-      console.log('Analysis result:', result);
-      return res.status(200).json(result);
-    } catch (error) {
-      console.error('Error analyzing website:', error);
-      return res.status(500).json({ 
-        error: 'An unexpected error occurred', 
-        details: error instanceof Error ? error.message : String(error)
-      });
+  try {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
     }
+    console.log('Analyzing URL:', url);
+    let result;
+    try {
+      result = await analyzeWebsite(url, { rejectUnauthorized: false });
+      console.log('Analysis result:', result);
+    } catch (analysisError: any) {
+      console.error('Error analyzing website:', analysisError);
+      throw new Error(`Error analyzing website: ${analysisError.message}`);
+    }
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return res.status(500).json({
+      error: 'An unexpected error occurred',
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
+  }
+  
 
   // Handle unsupported HTTP methods
   res.setHeader('Allow', ['POST']);
