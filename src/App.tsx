@@ -14,13 +14,19 @@ function App() {
     setResults(null);
     try {
       console.log(`Sending analysis request for URL: ${url}`);
-      const response = await axios.post('/api/analyze', { url }, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
-      });
-      console.log('Received results:', response.data);
+      let response;
+      try {
+        response = await axios.post('/api/analyze', { url }, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        });
+        console.log('Received results:', response.data);
+      } catch (requestError) {
+        console.error('Error during request:', requestError);
+        throw new Error(`Error during request: ${(requestError as Error).message}`);
+      }
       setResults(response.data);
     } catch (error: any) {
       console.error('Error during analysis:', error);
@@ -35,6 +41,7 @@ function App() {
       setLoading(false);
     }
   }, []);
+  
 
   return (
     <div className="container mx-auto p-4">
