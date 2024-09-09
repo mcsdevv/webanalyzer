@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom";
 import { URL } from "url";
 import * as https from "https";
 
-export async function analyzeWebsite(
+export default async function analyzeWebsite(
   url: string,
   options: { rejectUnauthorized: boolean }
 ) {
