@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import axios from 'axios';
 import UserInterface from './components/UserInterface';
 import ResultsDisplay from './components/ResultsDisplay';
@@ -7,8 +7,6 @@ function App() {
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const memoizedResults = useMemo(() => results, [results]);
 
   const handleAnalyze = useCallback(async (url: string) => {
     setLoading(true);
@@ -44,7 +42,7 @@ function App() {
       <UserInterface onAnalyze={handleAnalyze} loading={loading} />
       {loading && <p className="mt-4">Analyzing website...</p>}
       {error && <p className="mt-4 text-red-500">Error: {error}</p>}
-      {results && <ResultsDisplay results={memoizedResults} />}
+      {results && <ResultsDisplay results={results} />}
     </div>
   );
 }
