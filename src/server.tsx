@@ -31,20 +31,20 @@ async function startServer() {
 
   // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    logger.error('Error occurred:', err);
-    res.status(500).json({ error: 'An unexpected error occurred' });
+    logger.error('Error occurred S:', err);
+    res.status(500).json({ error: 'An unexpected error occurred s:' });
   });
 
   app.post('/analyze', async (req: Request, res: Response) => {
     try {
       const { url } = req.body;
-      logger.info(`Received analysis request for URL: ${url}`);
+      logger.info(`Received analysis request for URL S: ${url}`);
       const result = await analyzeWebsite(url, { rejectUnauthorized: false });
-      logger.info(`Analyzed website: ${url}`);
+      logger.info(`Analyzed website S: ${url}`);
       res.json(result);
     } catch (error: any) {
-      logger.error(`Error analyzing website: ${req.body.url}`, error);
-      res.status(500).json({ error: 'An unexpected error occurred' });
+      logger.error(`Error analyzing website S: ${req.body.url}`, error);
+      res.status(500).json({ error: 'An unexpected error occurred S:' });
     }
   });
 
