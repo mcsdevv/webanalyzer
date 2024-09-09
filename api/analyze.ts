@@ -8,25 +8,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
+  // Handle preflight request
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
+  // Handle POST request
   if (req.method === 'POST') {
     try {
       const { url } = req.body;
       if (!url) {
         return res.status(400).json({ error: 'URL is required' });
       }
+      console.log('Analyzing URL:', url);
       const result = await analyzeWebsite(url, { rejectUnauthorized: false });
+      console.log('Analysis result:', result);
       return res.status(200).json(result);
     } catch (error) {
       console.error('Error analyzing website:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
     }
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
+
+  // Handle unsupported HTTP methods
+  res.setHeader('Allow', ['POST']);
+  return res.status(405).end(`Method ${req.method} Not Allowed`);
 }
