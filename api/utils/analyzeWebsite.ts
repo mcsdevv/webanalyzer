@@ -369,6 +369,7 @@ function detectSocialLinks(doc: Document): string[] {
     "instagram.com",
     "youtube.com",
     "tiktok.com",
+    "x.com",
   ];
 
   socialPlatforms.forEach((platform) => {
