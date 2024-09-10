@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import mermaid from 'mermaid';
 
-
 // Types
 type AnalysisResults = {
   error?: string;
@@ -24,6 +23,8 @@ type AnalysisResults = {
   architecture?: string;
   marketing_technologies?: string[];
   social_links?: string[];
+  robots_txt?: string[];
+  sitemap_xml?: string[];
 };
 
 type ResultsDisplayProps = {
@@ -36,6 +37,7 @@ type ResultsDisplayProps = {
 type SectionState = {
   [key: string]: boolean;
 };
+
 // Helper Components
 const CollapsibleSection: React.FC<{ 
   title: string; 
@@ -62,6 +64,7 @@ const CollapsibleSection: React.FC<{
     </div>
   );
 };
+
 const ListSection: React.FC<{ items: string[] }> = ({ items }) => (
   <ul className="list-disc list-inside text-foreground">
     {items.map((item, index) => (
@@ -211,7 +214,18 @@ const GenericSection: React.FC<{ data: Record<string, any> }> = ({ data }) => (
     ))}
   </ul>
 );
-
+// New component for Social Links
+const SocialLinks: React.FC<{ links: string[] }> = ({ links }) => (
+  <ul className="list-disc list-inside text-foreground">
+    {links.map((link, index) => (
+      <li key={index}>
+        <a href={link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+          {link}
+        </a>
+      </li>
+    ))}
+  </ul>
+);
 // Helper function to check if content is empty, unknown, or an empty array
 const isEmptyUnknownOrEmptyArray = (content: any): boolean => {
   if (Array.isArray(content)) {
@@ -227,11 +241,9 @@ const isEmptyUnknownOrEmptyArray = (content: any): boolean => {
 };
 
 // Main Component
-// Update the ResultsDisplay component to use the new ArchitectureDiagram
 const ResultsDisplay: React.FC<ResultsDisplayProps> = React.memo(({ results }) => {
   const { analysis_results, architecture_diagram } = results;
 
-  
   // Initialize sections state
   const initialSectionsState = Object.keys(analysis_results).reduce((acc, key) => {
     const content = analysis_results[key as keyof AnalysisResults];
@@ -310,6 +322,8 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = React.memo(({ results }) =
     { key: 'security_analysis', title: 'Security Analysis', content: analysis_results.security_analysis },
     { key: 'performance_analysis', title: 'Performance Analysis', content: analysis_results.performance_analysis },
     { key: 'accessibility_analysis', title: 'Accessibility Analysis', content: analysis_results.accessibility_analysis },
+    { key: 'robots_txt', title: 'Robots.txt', content: analysis_results.robots_txt },
+    { key: 'sitemap_xml', title: 'Sitemap.xml', content: analysis_results.sitemap_xml },
   ].sort((a, b) => {
     if (!isEmptyUnknownOrEmptyArray(a.content) && isEmptyUnknownOrEmptyArray(b.content)) return -1;
     if (isEmptyUnknownOrEmptyArray(a.content) && !isEmptyUnknownOrEmptyArray(b.content)) return 1;
@@ -338,7 +352,11 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = React.memo(({ results }) =
               onToggle={() => toggleSection(section.key)}
             >
               <div className="break-words">
-                {renderContent(section.content)}
+                {section.key === 'social_links' && Array.isArray(section.content) ? (
+                  <SocialLinks links={section.content} />
+                ) : (
+                  renderContent(section.content)
+                )}
               </div>
             </CollapsibleSection>
           </div>
@@ -347,4 +365,5 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = React.memo(({ results }) =
     </div>
   );
 });
+
 export default ResultsDisplay;

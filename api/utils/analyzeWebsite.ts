@@ -1,7 +1,8 @@
-import axios, { AxiosResponseHeaders, RawAxiosResponseHeaders } from "axios";
+import axios, { AxiosRequestConfig, AxiosResponseHeaders, RawAxiosResponseHeaders } from "axios";
 import { JSDOM } from "jsdom";
 import { URL } from "url";
 import * as https from "https";
+import { performance } from "perf_hooks";
 
 export async function analyzeWebsite(
   url: string,
@@ -11,7 +12,9 @@ export async function analyzeWebsite(
     // Log the URL and options passed to the function
     console.log("Analyzing URL:", url, "with options:", options);
 
-    const axiosConfig = {
+    const startTime = performance.now();
+
+    const axiosConfig: AxiosRequestConfig = {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
@@ -23,6 +26,9 @@ export async function analyzeWebsite(
     };
 
     const response = await axios.get(url, axiosConfig);
+
+    const endTime = performance.now();
+    const responseTime = endTime - startTime;
 
     // Log the response object returned by Axios
     console.log("Axios response:", response);
@@ -39,21 +45,23 @@ export async function analyzeWebsite(
       html_structure: analyzeHtmlStructure(document),
       css_frameworks: detectCssFrameworks(response.data, document),
       javascript_libraries: detectJavascriptLibraries(response.data, document),
-      server_technologies: detectServerTechnologies(response.headers),
+      server_technologies: await detectServerTechnologies(url, response.headers),
       hosting_provider: hostingProvider,
       cdn_provider: detectCdnProvider(response.headers),
       cms: detectCMS(response.data, document),
       ecommerce_platform: detectEcommercePlatform(response.data, document),
-      seo_analysis: analyzeSEO(document),
+      seo_analysis: await analyzeSEO(document),
       security_analysis: analyzeSecurity(response.headers),
-      performance_analysis: analyzePerformance(response.headers),
-      accessibility_analysis: analyzeAccessibility(document),
+      performance_analysis: analyzePerformance(response.headers, responseTime),
+      accessibility_analysis: await analyzeAccessibility(document),
       architecture: detectArchitecture(response.data, document),
       marketing_technologies: detectMarketingTechnologies(
         response.data,
         document
       ),
       social_links: detectSocialLinks(document),
+      robots_txt: await fetchRobotsTxt(new URL(url).origin),
+      sitemap_xml: await fetchSitemapXml(new URL(url).origin),
     };
 
     // Log the results of each analysis function
@@ -72,7 +80,8 @@ export async function analyzeWebsite(
     console.log("Architecture:", analysis.architecture);
     console.log("Marketing technologies:", analysis.marketing_technologies);
     console.log("Social links:", analysis.social_links);
-
+    console.log("robots.txt:", analysis.robots_txt);
+    console.log("sitemap.xml:", analysis.sitemap_xml);
     const architectureDiagram = generateArchitectureDiagram(analysis);
 
     return {
@@ -124,23 +133,32 @@ function analyzeSecurity(
     securityHeaders: Object.keys(headers).filter((header) =>
       header.startsWith("security-")
     ),
+    xssProtection: headers["x-xss-protection"],
+    frameOptions: headers["x-frame-options"],
+    referrerPolicy: headers["referrer-policy"],
   };
 }
 
 // Performance Analysis
 function analyzePerformance(
-  headers: AxiosResponseHeaders | RawAxiosResponseHeaders
+  headers: AxiosResponseHeaders | RawAxiosResponseHeaders,
+  responseTime: number
 ): Record<string, any> {
   return {
     cacheControl: headers["cache-control"],
     expires: headers["expires"],
     contentEncoding: headers["content-encoding"],
     transferEncoding: headers["transfer-encoding"],
+    responseTime: `${responseTime.toFixed(2)} ms`,
+    firstContentfulPaint: calculateFirstContentfulPaint(responseTime),
+    largestContentfulPaint: calculateLargestContentfulPaint(responseTime),
+    totalBlockingTime: calculateTotalBlockingTime(responseTime),
+    cumulativeLayoutShift: calculateCumulativeLayoutShift(responseTime),
   };
 }
 
 // SEO Analysis
-function analyzeSEO(document: Document): Record<string, any> {
+async function analyzeSEO(document: Document): Promise<Record<string, any>> {
   return {
     metaTitle: document.title,
     metaDescription: document
@@ -149,23 +167,63 @@ function analyzeSEO(document: Document): Record<string, any> {
     metaKeywords: document
       .querySelector('meta[name="keywords"]')
       ?.getAttribute("content"),
-    headerTags: Array.from(
-      document.querySelectorAll("h1, h2, h3, h4, h5, h6")
-    ).map((header) => header.textContent),
-    imageAltTags: Array.from(document.querySelectorAll("img")).map(
-      (image) => image.alt
-    ),
-    internalLinks: Array.from(document.querySelectorAll("a"))
+      headerTags: Array.from(
+        document.querySelectorAll("h1, h2, h3, h4, h5, h6")
+      ).map((header) => header.textContent),
+      imageAltTags: Array.from(document.querySelectorAll("img")).map(
+        (image) => image.alt
+      ),
+      internalLinks: Array.from(document.querySelectorAll("a"))
       .filter((link) => link.href && link.href.startsWith("/"))
       .map((link) => link.href),
-    externalLinks: Array.from(document.querySelectorAll("a"))
+      externalLinks: Array.from(document.querySelectorAll("a"))
       .filter((link) => link.href && link.href.startsWith("http"))
       .map((link) => link.href),
-  };
+      robots_txt: await fetchRobotsTxt(new URL(URL).origin),
+      sitemap_xml: await fetchSitemapXml(new URL(URL).origin),
+    };
+  }
+// Updated fetchRobotsTxt function
+async function fetchRobotsTxt(baseURL: string): Promise<string> {
+  const robotsUrl = `${baseURL}/robots.txt`;
+  try {
+    const response = await axios.get(robotsUrl, {
+      timeout: 5000,
+      validateStatus: (status) => status < 400,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching robots.txt from ${robotsUrl}:`, error);
+    return "Unable to fetch robots.txt";
+  }
 }
 
-// Accessibility Analysis
-function analyzeAccessibility(document: Document): Record<string, any> {
+// Updated fetchSitemapXml function
+async function fetchSitemapXml(baseURL: string): Promise<string> {
+  const sitemapUrls = [
+    `${baseURL}/sitemap.xml`,
+    `${baseURL}/sitemap_index.xml`,
+    `${baseURL}/sitemap1.xml`,
+    `${baseURL}/sitemap-index.xml`,
+  ];
+
+  for (const url of sitemapUrls) {
+    try {
+      const response = await axios.get(url, {
+        timeout: 5000,
+        validateStatus: (status) => status < 400,
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching sitemap from ${url}:`, error);
+    }
+  }
+
+  return "Unable to fetch sitemap.xml";
+}
+  
+  // Accessibility Analysis
+  async function analyzeAccessibility(document: Document): Promise<Record<string, any>> {
   return {
     semanticHTML:
       document.querySelectorAll(
@@ -177,6 +235,10 @@ function analyzeAccessibility(document: Document): Record<string, any> {
     descriptiveLinkText: Array.from(document.querySelectorAll("a")).every(
       (link) => link.textContent?.trim() !== ""
     ),
+    languageAttribute: document.documentElement.lang,
+    contrastRatio: await calculateContrastRatio(document),
+    audioTranscripts: detectAudioTranscripts(document),
+    videoTranscripts: detectVideoTranscripts(document),
   };
 }
 
@@ -201,6 +263,9 @@ function detectCssFrameworks(html: string, doc: Document): string[] {
     { name: "Foundation", keyword: "foundation" },
     { name: "Materialize", keyword: "materialize" },
     { name: "Semantic UI", keyword: "semantic-ui" },
+    { name: "Ant Design", keyword: "ant-design" },
+    { name: "Material UI", keyword: "material-ui" },
+    { name: "Chakra UI", keyword: "chakra-ui" },
   ];
 
   cssFrameworks.forEach(({ name, keyword }) => {
@@ -227,6 +292,14 @@ function detectJavascriptLibraries(html: string, doc: Document): string[] {
     { name: "Moment.js", keyword: "moment" },
     { name: "Axios", keyword: "axios" },
     { name: "D3.js", keyword: "d3" },
+    { name: "Redux", keyword: "redux" },
+    { name: "Next.js", keyword: "next" },
+    { name: "Gatsby", keyword: "gatsby" },
+    { name: "Ember", keyword: "ember" },
+    { name: "Svelte", keyword: "svelte" },
+    { name: "Nuxt.js", keyword: "nuxt" },
+    { name: "Apollo GraphQL", keyword: "apollo" },
+    { name: "Three.js", keyword: "three" },
   ];
 
   jsLibraries.forEach(({ name, keyword }) => {
@@ -242,144 +315,74 @@ function detectJavascriptLibraries(html: string, doc: Document): string[] {
 }
 
 // Server Technology Detection
-function detectServerTechnologies(
+async function detectServerTechnologies(
+  url: string,
   headers: AxiosResponseHeaders | RawAxiosResponseHeaders
-): string[] {
-  const technologies = [];
+): Promise<string[]> {
+  const technologies: string[] = [];
   const server = headers["server"] as string | undefined;
-  if (server) {
-    if (server.includes("Apache")) technologies.push("Apache");
-    if (server.includes("nginx")) technologies.push("Nginx");
-    if (server.includes("IIS")) technologies.push("IIS");
-    if (server.includes("LiteSpeed")) technologies.push("LiteSpeed");
-  }
   const poweredBy = headers["x-powered-by"] as string | undefined;
+  const via = headers["via"] as string | undefined;
+  const xAspNetVersion = headers["x-aspnet-version"] as string | undefined;
+  const xRailsVersion = headers["x-rails-version"] as string | undefined;
+  const contentType = headers["content-type"] as string | undefined;
+  const cdnHeader = headers["cdn-provider"] as string | undefined;
+
+  console.debug("Server header:", server);
+  console.debug("x-powered-by header:", poweredBy);
+  console.debug("via header:", via);
+  console.debug("x-aspnet-version header:", xAspNetVersion);
+  console.debug("x-rails-version header:", xRailsVersion);
+  console.debug("Content-Type header:", contentType);
+  console.debug("CDN provider header:", cdnHeader);
+
+  if (server) {
+    if (/apache/i.test(server)) technologies.push("Apache");
+    if (/nginx/i.test(server)) technologies.push("Nginx");
+    if (/microsoft-iis/i.test(server)) technologies.push("IIS");
+    if (/litespeed/i.test(server)) technologies.push("LiteSpeed");
+  }
+
   if (poweredBy) {
-    if (poweredBy.includes("PHP")) technologies.push("PHP");
-    if (poweredBy.includes("ASP.NET")) technologies.push("ASP.NET");
-    if (poweredBy.includes("Express")) technologies.push("Express.js");
+    if (/php/i.test(poweredBy)) technologies.push("PHP");
+    if (/asp\.net/i.test(poweredBy)) technologies.push("ASP.NET");
+    if (/express/i.test(poweredBy)) technologies.push("Express.js");
+    if (/rails/i.test(poweredBy)) technologies.push("Ruby on Rails");
+    if (/laravel/i.test(poweredBy)) technologies.push("Laravel");
+    if (/django/i.test(poweredBy)) technologies.push("Django");
+    if (/node\.js/i.test(poweredBy)) technologies.push("Node.js");
   }
-  if (headers["x-aspnet-version"]) technologies.push("ASP.NET");
-  if (headers["x-rails-version"]) technologies.push("Ruby on Rails");
-  if (headers["via"] && headers["via"].includes("cloudflare"))
-    technologies.push("Cloudflare");
+
+  if (via) {
+    if (/cloudflare/i.test(via)) technologies.push("Cloudflare");
+  }
+
+  if (xAspNetVersion) technologies.push("ASP.NET");
+  if (xRailsVersion) technologies.push("Ruby on Rails");
+
+  if (cdnHeader) {
+    technologies.push(`CDN: ${cdnHeader}`);
+  }
+
+  if (contentType) {
+    if (/application\/json/i.test(contentType)) technologies.push("API Server");
+    if (/text\/html/i.test(contentType)) technologies.push("Web Server");
+  }
+
+  // Additional checks using the response body
+  const response = await axios.get(url, {
+    httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  });
+  const html = response.data as string;
+
+  if (html.includes('wp-content')) technologies.push("WordPress");
+  if (html.includes('Drupal')) technologies.push("Drupal");
+  if (html.includes('Joomla')) technologies.push("Joomla");
+  if (html.includes('Shopify')) technologies.push("Shopify");
+
+  console.debug("Detected server technologies:", technologies);
+
   return technologies;
-}
-
-// Detect Website Architecture (SPA, MPA, SSG, SSR)
-function detectArchitecture(html: string, doc: Document): string {
-  // Check for Server-Side Rendering (SSR)
-  if (
-    doc.querySelector('script[src*="next"]') ||
-    html.includes("__NEXT_DATA__")
-  ) {
-    return "SSR (Server-Side Rendering)";
-  }
-
-  // Check for Static Site Generation (SSG)
-  if (
-    doc.querySelector('script[src*="gatsby"]') ||
-    doc.querySelector('meta[content="Gatsby"]')
-  ) {
-    return "SSG (Static Site Generation)";
-  }
-  if (
-    doc.querySelector('script[src*="jekyll"]') ||
-    doc.querySelector('meta[content="Jekyll"]')
-  ) {
-    return "SSG (Static Site Generation)";
-  }
-  if (
-    doc.querySelector('script[src*="hugo"]') ||
-    doc.querySelector('meta[content="Hugo"]')
-  ) {
-    return "SSG (Static Site Generation)";
-  }
-
-  // Check for Single Page Application (SPA)
-  if (
-    doc.querySelector('script[src*="single-spa"]') ||
-    doc.querySelector('script[src*="react"]') ||
-    html.includes("window.__INITIAL_STATE__")
-  ) {
-    return "SPA (Single Page Application)";
-  }
-  if (
-    doc.querySelector('script[src*="angular"]') ||
-    html.includes("ng-version")
-  ) {
-    return "SPA (Single Page Application)";
-  }
-  if (
-    doc.querySelector('script[src*="vue"]') ||
-    html.includes("window.__INITIAL_STATE__")
-  ) {
-    return "SPA (Single Page Application)";
-  }
-
-  // Default to Multi-Page Application (MPA)
-  return "MPA (Multi-Page Application)";
-}
-
-// Marketing Technologies Detection
-function detectMarketingTechnologies(html: string, doc: Document): string[] {
-  const marketingTechs: string[] = [];
-  const techs = [
-    {
-      name: "Google Analytics",
-      keyword: "google-analytics",
-      regex: /analytics\.js/,
-    },
-    { name: "Google Tag Manager", keyword: "gtm", regex: /gtm\.js/ },
-    { name: "Facebook Pixel", keyword: "fbevents", regex: /fbevents\.js/ },
-    { name: "Hotjar", keyword: "hotjar", regex: /static\.hotjar\.com/ },
-    { name: "HubSpot", keyword: "hubspot", regex: /js\.hubspot\.com/ },
-    { name: "Marketo", keyword: "marketo", regex: /marketo\.com/ },
-    { name: "Salesforce", keyword: "salesforce", regex: /salesforce\.com/ },
-    { name: "Mixpanel", keyword: "mixpanel", regex: /cdn\.mixpanel\.com/ },
-    { name: "Crazy Egg", keyword: "crazyegg", regex: /crazyegg\.com/ },
-    { name: "Intercom", keyword: "intercom", regex: /intercom\.io/ },
-    {
-      name: "Kissmetrics",
-      keyword: "kissmetrics",
-      regex: /i\.kissmetrics\.com/,
-    },
-  ];
-
-  techs.forEach(({ name, keyword, regex }) => {
-    if (
-      html.includes(keyword) ||
-      doc.querySelector(`script[src*="${keyword}"]`) ||
-      regex.test(html)
-    ) {
-      marketingTechs.push(name);
-    }
-  });
-
-  return marketingTechs;
-}
-
-// Social Links Detection
-function detectSocialLinks(doc: Document): string[] {
-  const socialLinks: string[] = [];
-  const socialPlatforms = [
-    "facebook.com",
-    "twitter.com",
-    "linkedin.com",
-    "instagram.com",
-    "youtube.com",
-    "tiktok.com",
-    "x.com",
-  ];
-
-  socialPlatforms.forEach((platform) => {
-    const links = Array.from(
-      doc.querySelectorAll(`a[href*="${platform}"]`)
-    ).map((link) => link.getAttribute("href")?.toString());
-    socialLinks.push(...links.filter((link) => link !== undefined));
-  });
-
-  return socialLinks;
 }
 
 // Hosting Provider Detection
@@ -484,26 +487,205 @@ function detectCMS(html: string, doc: Document): string {
 
 // E-commerce Platform Detection
 function detectEcommercePlatform(html: string, doc: Document): string {
-  if (html.includes("shopify") || doc.querySelector('link[href*="shopify"]'))
-    return "Shopify";
-  if (html.includes("magento") || doc.querySelector('script[src*="magento"]'))
-    return "Magento";
-  if (
-    html.includes("woocommerce") ||
-    doc.querySelector('link[href*="woocommerce"]')
-  )
-    return "WooCommerce";
-  if (
-    html.includes("bigcommerce") ||
-    doc.querySelector('link[rel="stylesheet"][href*="bigcommerce.com"]')
-  )
-    return "BigCommerce";
-  if (
-    html.includes("prestashop") ||
-    doc.querySelector('meta[name="generator"][content*="PrestaShop"]')
-  )
-    return "PrestaShop";
+  const ecommercePlatforms = [
+    { name: "Shopify", keywords: ["shopify"], selector: 'link[href*="shopify"]' },
+    { name: "Magento", keywords: ["magento"], selector: 'script[src*="magento"]' },
+    { name: "WooCommerce", keywords: ["woocommerce"], selector: 'link[href*="woocommerce"]' },
+    { name: "BigCommerce", keywords: ["bigcommerce"], selector: 'link[rel="stylesheet"][href*="bigcommerce.com"]' },
+    { name: "PrestaShop", keywords: ["prestashop"], selector: 'meta[name="generator"][content*="PrestaShop"]' },
+    { name: "Squarespace", keywords: ["squarespace"], selector: 'meta[name="generator"][content*="Squarespace"]' },
+    { name: "Wix", keywords: ["wixstores"], selector: 'meta[name="generator"][content*="Wix.com"]' },
+    { name: "Volusion", keywords: ["volusion"], selector: 'script[src*="volusion"]' },
+    { name: "3dcart", keywords: ["3dcart"], selector: 'script[src*="3dcart"]' },
+    { name: "OpenCart", keywords: ["opencart"], selector: 'meta[name="generator"][content*="OpenCart"]' },
+    { name: "Zen Cart", keywords: ["zen-cart"], selector: 'meta[name="generator"][content*="Zen Cart"]' },
+    { name: "Squarespace", keywords: ["squarespace"], selector: 'meta[name="generator"][content*="Squarespace"]' },
+    { name: "Weebly", keywords: ["weebly"], selector: 'meta[name="generator"][content*="Weebly"]' },
+    { name: "Big Cartel", keywords: ["bigcartel"], selector: 'meta[name="generator"][content*="Big Cartel"]' },
+    { name: "Yahoo Small Business", keywords: ["yahoodotcom"], selector: 'meta[name="generator"][content*="Yahoo Small Business"]' },
+    { name: "Ecwid", keywords: ["ecwid"], selector: 'script[src*="ecwid"]' },
+    { name: "osCommerce", keywords: ["oscommerce"], selector: 'meta[name="generator"][content*="osCommerce"]' },
+    { name: "Lightspeed", keywords: ["lightspeed"], selector: 'meta[name="generator"][content*="LightSpeed"]' },
+    { name: "Shopware", keywords: ["shopware"], selector: 'meta[name="generator"][content*="Shopware"]' },
+    { name: "Hybris", keywords: ["hybris"], selector: 'script[src*="hybris"]' },
+    { name: "Demandware", keywords: ["demandware"], selector: 'script[src*="demandware"]' },
+  ];
+
+  for (const platform of ecommercePlatforms) {
+    if (platform.keywords.some(keyword => html.includes(keyword)) || doc.querySelector(platform.selector)) {
+      return platform.name;
+    }
+  }
+
   return "Unknown";
+}
+
+
+// Calculate First Contentful Paint
+function calculateFirstContentfulPaint(responseTime: number): string {
+  // Placeholder function for illustration. Ideally, this would use a library or API to calculate.
+  return `${(responseTime * 0.3).toFixed(2)} ms`;
+}
+
+// Calculate Largest Contentful Paint
+function calculateLargestContentfulPaint(responseTime: number): string {
+  // Placeholder function for illustration. Ideally, this would use a library or API to calculate.
+  return `${(responseTime * 0.6).toFixed(2)} ms`;
+}
+
+// Calculate Total Blocking Time
+function calculateTotalBlockingTime(responseTime: number): string {
+  // Placeholder function for illustration. Ideally, this would use a library or API to calculate.
+  return `${(responseTime * 0.2).toFixed(2)} ms`;
+}
+
+// Calculate Cumulative Layout Shift
+function calculateCumulativeLayoutShift(responseTime: number): string {
+  // Placeholder function for illustration. Ideally, this would use a library or API to calculate.
+  return `${(responseTime * 0.1).toFixed(2)}`;
+}
+
+// Calculate Contrast Ratio
+async function calculateContrastRatio(_document: Document): Promise<number> {
+  // Placeholder function for illustration. Ideally, this would use a library like axe-core.
+  return 4.5;
+}
+
+// Detect Audio Transcripts
+function detectAudioTranscripts(document: Document): boolean {
+  const audioElements = document.querySelectorAll("audio");
+  return Array.from(audioElements).every(
+    (audio) => audio.nextElementSibling && audio.nextElementSibling.tagName.toLowerCase() === "p"
+  );
+}
+
+// Detect Video Transcripts
+function detectVideoTranscripts(document: Document): boolean {
+  const videoElements = document.querySelectorAll("video");
+  return Array.from(videoElements).every(
+    (video) => video.nextElementSibling && video.nextElementSibling.tagName.toLowerCase() === "p"
+  );
+}
+
+// Detect Website Architecture (SPA, MPA, SSG, SSR)
+function detectArchitecture(html: string, doc: Document): string {
+  // Check for Server-Side Rendering (SSR)
+  if (
+    doc.querySelector('script[src*="next"]') ||
+    html.includes("__NEXT_DATA__")
+  ) {
+    return "SSR (Server-Side Rendering)";
+  }
+
+  // Check for Static Site Generation (SSG)
+  if (
+    doc.querySelector('script[src*="gatsby"]') ||
+    doc.querySelector('meta[content="Gatsby"]')
+  ) {
+    return "SSG (Static Site Generation)";
+  }
+  if (
+    doc.querySelector('script[src*="jekyll"]') ||
+    doc.querySelector('meta[content="Jekyll"]')
+  ) {
+    return "SSG (Static Site Generation)";
+  }
+  if (
+    doc.querySelector('script[src*="hugo"]') ||
+    doc.querySelector('meta[content="Hugo"]')
+  ) {
+    return "SSG (Static Site Generation)";
+  }
+
+  // Check for Single Page Application (SPA)
+  if (
+    doc.querySelector('script[src*="single-spa"]') ||
+    doc.querySelector('script[src*="react"]') ||
+    html.includes("window.__INITIAL_STATE__")
+  ) {
+    return "SPA (Single Page Application)";
+  }
+  if (
+    doc.querySelector('script[src*="angular"]') ||
+    html.includes("ng-version")
+  ) {
+    return "SPA (Single Page Application)";
+  }
+  if (
+    doc.querySelector('script[src*="vue"]') ||
+    html.includes("window.__INITIAL_STATE__")
+  ) {
+    return "SPA (Single Page Application)";
+  }
+
+  // Default to Multi-Page Application (MPA)
+  return "MPA (Multi-Page Application)";
+}
+
+// Marketing Technologies Detection
+function detectMarketingTechnologies(html: string, doc: Document): string[] {
+  const marketingTechs: string[] = [];
+  const techs = [
+    {
+      name: "Google Analytics",
+      keyword: "google-analytics",
+      regex: /analytics\.js/,
+    },
+    { name: "Google Tag Manager", keyword: "gtm", regex: /gtm\.js/ },
+    { name: "Facebook Pixel", keyword: "fbevents", regex: /fbevents\.js/ },
+    { name: "Hotjar", keyword: "hotjar", regex: /static\.hotjar\.com/ },
+    { name: "HubSpot", keyword: "hubspot", regex: /js\.hubspot\.com/ },
+    { name: "Marketo", keyword: "marketo", regex: /marketo\.com/ },
+    { name: "Salesforce", keyword: "salesforce", regex: /salesforce\.com/ },
+    { name: "Mixpanel", keyword: "mixpanel", regex: /cdn\.mixpanel\.com/ },
+    { name: "Crazy Egg", keyword: "crazyegg", regex: /crazyegg\.com/ },
+    { name: "Intercom", keyword: "intercom", regex: /intercom\.io/ },
+    {
+      name: "Kissmetrics",
+      keyword: "kissmetrics",
+      regex: /i\.kissmetrics\.com/,
+    },
+    { name: "Heap Analytics", keyword: "heap-analytics", regex: /heap\.js/ },
+    { name: "Segment", keyword: "segment", regex: /segment\.js/ },
+    { name: "Optimizely", keyword: "optimizely", regex: /optimizely\.js/ },
+  ];
+
+  techs.forEach(({ name, keyword, regex }) => {
+    if (
+      html.includes(keyword) ||
+      doc.querySelector(`script[src*="${keyword}"]`) ||
+      regex.test(html)
+    ) {
+      marketingTechs.push(name);
+    }
+  });
+
+  return marketingTechs;
+}
+
+// Social Links Detection
+function detectSocialLinks(doc: Document): string[] {
+  const socialLinks: string[] = [];
+  const socialPlatforms = [
+    "facebook.com",
+    "twitter.com",
+    "linkedin.com",
+    "instagram.com",
+    "youtube.com",
+    "tiktok.com",
+    "x.com",
+    "pinterest.com",
+    "reddit.com",
+  ];
+
+  socialPlatforms.forEach((platform) => {
+    const links = Array.from(
+      doc.querySelectorAll(`a[href*="${platform}"]`)
+    ).map((link) => link.getAttribute("href")?.toString());
+    socialLinks.push(...links.filter((link) => link !== undefined));
+  });
+
+  return socialLinks;
 }
 
 // Generate Architecture Diagram

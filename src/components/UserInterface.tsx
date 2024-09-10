@@ -8,20 +8,20 @@ interface UserInterfaceProps {
 const UserInterface: React.FC<UserInterfaceProps> = ({ onAnalyze, loading }) => {
   const [url, setUrl] = useState('');
 
-  useEffect(() => {
-    console.log('UserInterface Component Mounted');
-    return () => {
-      console.log('UserInterface Component Unmounted');
-    };
-  }, []);
+  // useEffect(() => {
+  //   console.log('UserInterface Component Mounted');
+  //   return () => {
+  //     console.log('UserInterface Component Unmounted');
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    console.log('URL state changed:', url);
-  }, [url]);
+  // useEffect(() => {
+  //   console.log('URL state changed:', url);
+  // }, [url]);
 
-  useEffect(() => {
-    console.log('Loading state changed:', loading);
-  }, [loading]);
+  // useEffect(() => {
+  //   console.log('Loading state changed:', loading);
+  // }, [loading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +31,7 @@ const UserInterface: React.FC<UserInterfaceProps> = ({ onAnalyze, loading }) => 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    console.log('Input value changed:', newValue);
+    // console.log('Input value changed:', newValue);
     setUrl(newValue);
   };
 
