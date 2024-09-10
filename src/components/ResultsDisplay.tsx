@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import mermaid from 'mermaid';
 
+
 // Types
 type AnalysisResults = {
   error?: string;
@@ -43,28 +44,26 @@ const CollapsibleSection: React.FC<{
   onToggle: () => void;
 }> = ({ title, children, isOpen, onToggle }) => {
   return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden transition-all duration-300 ease-in-out">
+    <div className="bg-card text-card-foreground shadow-md rounded-lg overflow-hidden transition-all duration-300 ease-in-out">
       <button
-        className="w-full text-left font-semibold text-lg p-4 flex justify-between items-center bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+        className="w-full text-left font-semibold text-lg p-4 flex justify-between items-center bg-muted hover:bg-muted/90 transition-colors duration-200"
         onClick={onToggle}
       >
+        <span>{title}</span>
         <span className="transition-transform duration-200 ease-in-out transform" style={{ 
           transform: isOpen ? 'rotate(-180deg)' : 'rotate(0deg)'
         }}>▼</span>
-        {title}
       </button>
-      <div 
-        className="overflow-hidden transition-all duration-300 ease-in-out"
-        style={{ maxHeight: isOpen ? '1000px' : '0px' }}
-      >
-        <div className="p-4">{children}</div>
-      </div>
+      {isOpen && (
+        <div className="p-4">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
-
 const ListSection: React.FC<{ items: string[] }> = ({ items }) => (
-  <ul className="list-disc list-inside">
+  <ul className="list-disc list-inside text-foreground">
     {items.map((item, index) => (
       <li key={index}>{item}</li>
     ))}
@@ -88,7 +87,8 @@ const ArchitectureDiagram: React.FC<{ diagram: string }> = ({ diagram }) => {
       mermaid.initialize({
         startOnLoad: true,
         securityLevel: 'loose',
-        theme: 'default',
+        theme: 'neutral',
+        darkMode: document.documentElement.classList.contains('dark'),
         flowchart: {
           useMaxWidth: false,
           htmlLabels: true,
@@ -150,29 +150,22 @@ const ArchitectureDiagram: React.FC<{ diagram: string }> = ({ diagram }) => {
   const handleResetZoom = () => fitDiagramToContainer();
 
   if (diagramError) {
-    return <p className="text-red-500">{diagramError}</p>;
+    return <p className="text-destructive">{diagramError}</p>;
   }
 
   return (
-    <div className="relative w-full h-full" ref={containerRef}>
+    <div className="relative w-full h-full bg-card text-card-foreground rounded-lg shadow-md p-4" ref={containerRef}>
       <div className="absolute top-2 right-2 space-x-2 z-10">
-        <button onClick={handleZoomIn} className="bg-blue-500 text-white px-2 py-1 rounded">+</button>
-        <button onClick={handleZoomOut} className="bg-blue-500 text-white px-2 py-1 rounded">-</button>
-        <button onClick={handleResetZoom} className="bg-blue-500 text-white px-2 py-1 rounded">Reset</button>
+        <button onClick={handleZoomIn} className="bg-primary text-primary-foreground hover:bg-primary/90 px-2 py-1 rounded">+</button>
+        <button onClick={handleZoomOut} className="bg-primary text-primary-foreground hover:bg-primary/90 px-2 py-1 rounded">-</button>
+        <button onClick={handleResetZoom} className="bg-primary text-primary-foreground hover:bg-primary/90 px-2 py-1 rounded">Reset</button>
       </div>
       <div
-        style={{
-          width: '100%',
-          height: '100%',
-          overflow: 'auto',
-        }}
+        className="w-full h-full overflow-auto"
       >
         <div
-          style={{
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top left',
-            transition: 'transform 0.3s ease-in-out',
-          }}
+          className="transform origin-top-left transition-transform duration-300 ease-in-out"
+          style={{ transform: `scale(${zoom})` }}
           dangerouslySetInnerHTML={{ __html: diagramSvg || '' }}
         />
       </div>
@@ -183,8 +176,8 @@ const ArchitectureDiagram: React.FC<{ diagram: string }> = ({ diagram }) => {
 
 const BasicInfo: React.FC<{ info: AnalysisResults['basic_info'] }> = ({ info }) => (
   <>
-    {info?.title && <p><strong>Title:</strong> {info.title}</p>}
-    {info?.description && <p><strong>Description:</strong> {info.description}</p>}
+    {info?.title && <p className="text-foreground"><strong>Title:</strong> {info.title}</p>}
+    {info?.description && <p className="text-foreground"><strong>Description:</strong> {info.description}</p>}
   </>
 );
 
@@ -196,12 +189,12 @@ const HtmlStructure: React.FC<{ structure: Record<string, number> }> = ({ struct
 
   return (
     <>
-      <p>Total HTML elements: {totalElements}</p>
-      <h4 className="font-semibold mt-2">Top 10 most frequent elements:</h4>
-      <ul className="list-disc list-inside">
+      <p className="text-foreground">Total HTML elements: {totalElements}</p>
+      <h4 className="font-semibold mt-2 text-foreground">Top 10 most frequent elements:</h4>
+      <ul className="list-disc list-inside text-foreground">
         {topElements.map(([element, count]) => (
           <li key={element}>
-            <code>{element}</code>: {count} ({((count / totalElements) * 100).toFixed(2)}%)
+            <code className="bg-muted text-muted-foreground px-1 rounded">{element}</code>: {count} ({((count / totalElements) * 100).toFixed(2)}%)
           </li>
         ))}
       </ul>
@@ -210,10 +203,10 @@ const HtmlStructure: React.FC<{ structure: Record<string, number> }> = ({ struct
 };
 
 const GenericSection: React.FC<{ data: Record<string, any> }> = ({ data }) => (
-  <ul className="list-disc list-inside">
+  <ul className="list-disc list-inside text-foreground">
     {Object.entries(data).map(([key, value]) => (
       <li key={key}>
-        <code>{key}</code>: {JSON.stringify(value)}
+        <code className="bg-muted text-muted-foreground px-1 rounded">{key}</code>: {JSON.stringify(value)}
       </li>
     ))}
   </ul>
@@ -324,22 +317,21 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = React.memo(({ results }) =
   });
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <h1 className="text-3xl font-semibold mb-4">Website Analysis Results</h1>
+    <div className="max-w-7xl mx-auto p-4 bg-background text-foreground">
       <div className="mb-4 h-[50vh]">
         <ArchitectureDiagram diagram={architecture_diagram} />
       </div>
       <div className="mb-4">
         <button 
           onClick={toggleAllSections} 
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors duration-200"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded transition-colors duration-200"
         >
           {allExpanded ? 'Collapse All' : 'Expand All'}
         </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
+      <div className="columns-1 md:columns-2 lg:columns-3 gap-4">
         {gridSections.map((section) => (
-          <div key={section.key} className="contents">
+          <div key={section.key} className="inline-block w-full mb-4">
             <CollapsibleSection 
               title={section.title}
               isOpen={sectionsState[section.key]}
@@ -355,5 +347,4 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = React.memo(({ results }) =
     </div>
   );
 });
-
 export default ResultsDisplay;
