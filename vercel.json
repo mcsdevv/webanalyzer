@@ -8,11 +8,6 @@
       "config": { "distDir": "dist" }
     }
   ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/assets/(.*)", "dest": "/dist/assets/$1" },
-    { "src": "/(.*)", "dest": "/dist/$1" }
-  ],
   "rewrites": [
     {
       "source": "/api/utils/analyzeWebsite.ts",
