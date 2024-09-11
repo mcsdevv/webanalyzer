@@ -15,8 +15,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/utils/analyzeWebsite",
-      "destination": "/api/utils/analyzeWebsite.ts"
+      "source": "/api/utils/analyzeWebsite.ts",
+      "destination": "/api/utils/analyzeWebsite"
     }
   ],
   "functions": {
