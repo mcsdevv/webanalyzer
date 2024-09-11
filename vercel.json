@@ -18,11 +18,6 @@
       "source": "/api/utils/analyzeWebsite.ts",
       "destination": "/api/utils/analyzeWebsite"
     }
-  ],
-  "functions": {
-    "api/utils/analyzeWebsite.ts": {
-      "runtime": "@vercel/node@3.2.10"
-    }
-  }
+  ]
 }
 
