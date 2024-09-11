@@ -15,12 +15,12 @@
   ],
   "rewrites": [
     {
-      "source": "/api/analyzeWebsite.ts",
-      "destination": "/api/analyzeWebsite"
+      "source": "/api/utils/analyzeWebsite",
+      "destination": "/api/utils/analyzeWebsite.ts"
     }
   ],
   "functions": {
-    "api/analyzeWebsite.ts": {
+    "api/utils/analyzeWebsite.ts": {
       "runtime": "@vercel/node@3.2.10"
     }
   }
