@@ -179,8 +179,8 @@ async function analyzeSEO(document: Document): Promise<Record<string, any>> {
       externalLinks: Array.from(document.querySelectorAll("a"))
       .filter((link) => link.href && link.href.startsWith("http"))
       .map((link) => link.href),
-      robots_txt: await fetchRobotsTxt(new URL(URL).origin),
-      sitemap_xml: await fetchSitemapXml(new URL(URL).origin),
+        // robots_txt: await fetchRobotsTxt(new URL(URL).origin),
+        // sitemap_xml: await fetchSitemapXml(new URL(URL).origin),
     };
   }
 // Updated fetchRobotsTxt function
