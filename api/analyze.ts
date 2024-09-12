@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { analyzeWebsite } from "./utils/_analyzeWebsite.ts";
+import { analyzeWebsite } from "./utils/_analyzeWebsite";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const result = await analyzeWebsite(url, { rejectUnauthorized: false });
       console.log("Analysis result:", result);
       return res.status(200).json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Unexpected error:", error);
       return res.status(500).json({
         error: "An unexpected error occurred",
