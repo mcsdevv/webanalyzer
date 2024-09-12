@@ -1,4 +1,8 @@
-import axios, { AxiosRequestConfig, AxiosResponseHeaders, RawAxiosResponseHeaders } from "axios";
+import axios, {
+  AxiosRequestConfig,
+  AxiosResponseHeaders,
+  RawAxiosResponseHeaders,
+} from "axios";
 import { JSDOM } from "jsdom";
 import { URL } from "url";
 import * as https from "https";
@@ -45,7 +49,10 @@ export async function analyzeWebsite(
       html_structure: analyzeHtmlStructure(document),
       css_frameworks: detectCssFrameworks(response.data, document),
       javascript_libraries: detectJavascriptLibraries(response.data, document),
-      server_technologies: await detectServerTechnologies(url, response.headers),
+      server_technologies: await detectServerTechnologies(
+        url,
+        response.headers
+      ),
       hosting_provider: hostingProvider,
       cdn_provider: detectCdnProvider(response.headers),
       cms: detectCMS(response.data, document),
@@ -167,22 +174,22 @@ async function analyzeSEO(document: Document): Promise<Record<string, any>> {
     metaKeywords: document
       .querySelector('meta[name="keywords"]')
       ?.getAttribute("content"),
-      headerTags: Array.from(
-        document.querySelectorAll("h1, h2, h3, h4, h5, h6")
-      ).map((header) => header.textContent),
-      imageAltTags: Array.from(document.querySelectorAll("img")).map(
-        (image) => image.alt
-      ),
-      internalLinks: Array.from(document.querySelectorAll("a"))
+    headerTags: Array.from(
+      document.querySelectorAll("h1, h2, h3, h4, h5, h6")
+    ).map((header) => header.textContent),
+    imageAltTags: Array.from(document.querySelectorAll("img")).map(
+      (image) => image.alt
+    ),
+    internalLinks: Array.from(document.querySelectorAll("a"))
       .filter((link) => link.href && link.href.startsWith("/"))
       .map((link) => link.href),
-      externalLinks: Array.from(document.querySelectorAll("a"))
+    externalLinks: Array.from(document.querySelectorAll("a"))
       .filter((link) => link.href && link.href.startsWith("http"))
       .map((link) => link.href),
-        // robots_txt: await fetchRobotsTxt(new URL(URL).origin),
-        // sitemap_xml: await fetchSitemapXml(new URL(URL).origin),
-    };
-  }
+    // robots_txt: await fetchRobotsTxt(new URL(URL).origin),
+    // sitemap_xml: await fetchSitemapXml(new URL(URL).origin),
+  };
+}
 // Updated fetchRobotsTxt function
 async function fetchRobotsTxt(baseURL: string): Promise<string> {
   const robotsUrl = `${baseURL}/robots.txt`;
@@ -221,9 +228,11 @@ async function fetchSitemapXml(baseURL: string): Promise<string> {
 
   return "Unable to fetch sitemap.xml";
 }
-  
-  // Accessibility Analysis
-  async function analyzeAccessibility(document: Document): Promise<Record<string, any>> {
+
+// Accessibility Analysis
+async function analyzeAccessibility(
+  document: Document
+): Promise<Record<string, any>> {
   return {
     semanticHTML:
       document.querySelectorAll(
@@ -375,10 +384,10 @@ async function detectServerTechnologies(
   });
   const html = response.data as string;
 
-  if (html.includes('wp-content')) technologies.push("WordPress");
-  if (html.includes('Drupal')) technologies.push("Drupal");
-  if (html.includes('Joomla')) technologies.push("Joomla");
-  if (html.includes('Shopify')) technologies.push("Shopify");
+  if (html.includes("wp-content")) technologies.push("WordPress");
+  if (html.includes("Drupal")) technologies.push("Drupal");
+  if (html.includes("Joomla")) technologies.push("Joomla");
+  if (html.includes("Shopify")) technologies.push("Shopify");
 
   console.debug("Detected server technologies:", technologies);
 
@@ -488,38 +497,112 @@ function detectCMS(html: string, doc: Document): string {
 // E-commerce Platform Detection
 function detectEcommercePlatform(html: string, doc: Document): string {
   const ecommercePlatforms = [
-    { name: "Shopify", keywords: ["shopify"], selector: 'link[href*="shopify"]' },
-    { name: "Magento", keywords: ["magento"], selector: 'script[src*="magento"]' },
-    { name: "WooCommerce", keywords: ["woocommerce"], selector: 'link[href*="woocommerce"]' },
-    { name: "BigCommerce", keywords: ["bigcommerce"], selector: 'link[rel="stylesheet"][href*="bigcommerce.com"]' },
-    { name: "PrestaShop", keywords: ["prestashop"], selector: 'meta[name="generator"][content*="PrestaShop"]' },
-    { name: "Squarespace", keywords: ["squarespace"], selector: 'meta[name="generator"][content*="Squarespace"]' },
-    { name: "Wix", keywords: ["wixstores"], selector: 'meta[name="generator"][content*="Wix.com"]' },
-    { name: "Volusion", keywords: ["volusion"], selector: 'script[src*="volusion"]' },
+    {
+      name: "Shopify",
+      keywords: ["shopify"],
+      selector: 'link[href*="shopify"]',
+    },
+    {
+      name: "Magento",
+      keywords: ["magento"],
+      selector: 'script[src*="magento"]',
+    },
+    {
+      name: "WooCommerce",
+      keywords: ["woocommerce"],
+      selector: 'link[href*="woocommerce"]',
+    },
+    {
+      name: "BigCommerce",
+      keywords: ["bigcommerce"],
+      selector: 'link[rel="stylesheet"][href*="bigcommerce.com"]',
+    },
+    {
+      name: "PrestaShop",
+      keywords: ["prestashop"],
+      selector: 'meta[name="generator"][content*="PrestaShop"]',
+    },
+    {
+      name: "Squarespace",
+      keywords: ["squarespace"],
+      selector: 'meta[name="generator"][content*="Squarespace"]',
+    },
+    {
+      name: "Wix",
+      keywords: ["wixstores"],
+      selector: 'meta[name="generator"][content*="Wix.com"]',
+    },
+    {
+      name: "Volusion",
+      keywords: ["volusion"],
+      selector: 'script[src*="volusion"]',
+    },
     { name: "3dcart", keywords: ["3dcart"], selector: 'script[src*="3dcart"]' },
-    { name: "OpenCart", keywords: ["opencart"], selector: 'meta[name="generator"][content*="OpenCart"]' },
-    { name: "Zen Cart", keywords: ["zen-cart"], selector: 'meta[name="generator"][content*="Zen Cart"]' },
-    { name: "Squarespace", keywords: ["squarespace"], selector: 'meta[name="generator"][content*="Squarespace"]' },
-    { name: "Weebly", keywords: ["weebly"], selector: 'meta[name="generator"][content*="Weebly"]' },
-    { name: "Big Cartel", keywords: ["bigcartel"], selector: 'meta[name="generator"][content*="Big Cartel"]' },
-    { name: "Yahoo Small Business", keywords: ["yahoodotcom"], selector: 'meta[name="generator"][content*="Yahoo Small Business"]' },
+    {
+      name: "OpenCart",
+      keywords: ["opencart"],
+      selector: 'meta[name="generator"][content*="OpenCart"]',
+    },
+    {
+      name: "Zen Cart",
+      keywords: ["zen-cart"],
+      selector: 'meta[name="generator"][content*="Zen Cart"]',
+    },
+    {
+      name: "Squarespace",
+      keywords: ["squarespace"],
+      selector: 'meta[name="generator"][content*="Squarespace"]',
+    },
+    {
+      name: "Weebly",
+      keywords: ["weebly"],
+      selector: 'meta[name="generator"][content*="Weebly"]',
+    },
+    {
+      name: "Big Cartel",
+      keywords: ["bigcartel"],
+      selector: 'meta[name="generator"][content*="Big Cartel"]',
+    },
+    {
+      name: "Yahoo Small Business",
+      keywords: ["yahoodotcom"],
+      selector: 'meta[name="generator"][content*="Yahoo Small Business"]',
+    },
     { name: "Ecwid", keywords: ["ecwid"], selector: 'script[src*="ecwid"]' },
-    { name: "osCommerce", keywords: ["oscommerce"], selector: 'meta[name="generator"][content*="osCommerce"]' },
-    { name: "Lightspeed", keywords: ["lightspeed"], selector: 'meta[name="generator"][content*="LightSpeed"]' },
-    { name: "Shopware", keywords: ["shopware"], selector: 'meta[name="generator"][content*="Shopware"]' },
+    {
+      name: "osCommerce",
+      keywords: ["oscommerce"],
+      selector: 'meta[name="generator"][content*="osCommerce"]',
+    },
+    {
+      name: "Lightspeed",
+      keywords: ["lightspeed"],
+      selector: 'meta[name="generator"][content*="LightSpeed"]',
+    },
+    {
+      name: "Shopware",
+      keywords: ["shopware"],
+      selector: 'meta[name="generator"][content*="Shopware"]',
+    },
     { name: "Hybris", keywords: ["hybris"], selector: 'script[src*="hybris"]' },
-    { name: "Demandware", keywords: ["demandware"], selector: 'script[src*="demandware"]' },
+    {
+      name: "Demandware",
+      keywords: ["demandware"],
+      selector: 'script[src*="demandware"]',
+    },
   ];
 
   for (const platform of ecommercePlatforms) {
-    if (platform.keywords.some(keyword => html.includes(keyword)) || doc.querySelector(platform.selector)) {
+    if (
+      platform.keywords.some((keyword) => html.includes(keyword)) ||
+      doc.querySelector(platform.selector)
+    ) {
       return platform.name;
     }
   }
 
   return "Unknown";
 }
-
 
 // Calculate First Contentful Paint
 function calculateFirstContentfulPaint(responseTime: number): string {
@@ -555,7 +638,9 @@ async function calculateContrastRatio(_document: Document): Promise<number> {
 function detectAudioTranscripts(document: Document): boolean {
   const audioElements = document.querySelectorAll("audio");
   return Array.from(audioElements).every(
-    (audio) => audio.nextElementSibling && audio.nextElementSibling.tagName.toLowerCase() === "p"
+    (audio) =>
+      audio.nextElementSibling &&
+      audio.nextElementSibling.tagName.toLowerCase() === "p"
   );
 }
 
@@ -563,7 +648,9 @@ function detectAudioTranscripts(document: Document): boolean {
 function detectVideoTranscripts(document: Document): boolean {
   const videoElements = document.querySelectorAll("video");
   return Array.from(videoElements).every(
-    (video) => video.nextElementSibling && video.nextElementSibling.tagName.toLowerCase() === "p"
+    (video) =>
+      video.nextElementSibling &&
+      video.nextElementSibling.tagName.toLowerCase() === "p"
   );
 }
 
@@ -679,10 +766,10 @@ function detectSocialLinks(doc: Document): string[] {
   ];
 
   socialPlatforms.forEach((platform) => {
-    const links = Array.from(
-      doc.querySelectorAll(`a[href*="${platform}"]`)
-    ).map((link) => link.getAttribute("href")?.toString());
-    socialLinks.push(...links.filter((link) => link !== undefined));
+    const links = Array.from(doc.querySelectorAll(`a[href*="${platform}"]`))
+      .map((link) => link.getAttribute("href"))
+      .filter((link): link is string => link !== null);
+    socialLinks.push(...links);
   });
 
   return socialLinks;
