@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ESNext",
+    // "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-    "moduleResolution": "node",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
+    // "moduleResolution": "node",
+    // "allowImportingTsExtensions": true,
+    // "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "strict": true,
